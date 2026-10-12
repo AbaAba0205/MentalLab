@@ -3,8 +3,8 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { moods } from '@/lib/model';
 
-export function Modal({ title, label, children, actions, onClose }: {
-  title: string; label: string; children: ReactNode; actions?: ReactNode; onClose: () => void;
+export function Modal({ title, label, children, actions, onClose, dismissible = true }: {
+  title: string; label: string; children: ReactNode; actions?: ReactNode; onClose: () => void; dismissible?: boolean;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   useEffect(() => {
@@ -12,9 +12,9 @@ export function Modal({ title, label, children, actions, onClose }: {
     dialog?.showModal();
     return () => dialog?.close();
   }, []);
-  return <dialog id="dialog" ref={ref} aria-labelledby="dialog-title" onCancel={onClose}>
+  return <dialog id="dialog" ref={ref} aria-labelledby="dialog-title" onCancel={event => { if (!dismissible) event.preventDefault(); else onClose(); }}>
     <div className="modal">
-      <div className="modal-top"><span className="modal-label">{label}</span><button className="close-button" aria-label="关闭" onClick={onClose}>×</button></div>
+      <div className="modal-top"><span className="modal-label">{label}</span>{dismissible && <button className="close-button" aria-label="关闭" onClick={onClose}>×</button>}</div>
       <h2 id="dialog-title">{title}</h2>{children}
       {actions && <div className="modal-actions">{actions}</div>}
     </div>

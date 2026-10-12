@@ -1,3 +1,5 @@
+import { assessRisk } from './safety';
+
 export type ExerciseId = 'ground' | 'thought' | 'plan';
 export type RecordKind = 'checkin' | 'exercise';
 
@@ -49,7 +51,7 @@ export function recommendation(intensity: number): ExerciseId {
 
 // Demonstration guard only; this is NOT a clinical risk assessment.
 export function needsSupport(text: string): boolean {
-  return /自杀|自伤|不想活|想死|伤害自己|伤害别人|正在被打/.test(text);
+  return assessRisk(text).requiresHandoff;
 }
 
 function validIntensity(value: unknown): value is number | null {

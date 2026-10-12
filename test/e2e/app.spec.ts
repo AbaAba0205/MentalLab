@@ -9,6 +9,8 @@ test.beforeEach(async ({ page }) => {
   page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
   await page.goto('/');
   await expect(page.getByRole('heading', { name: '嗨，今天的你还好吗？' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '欢迎来到心屿' })).toBeVisible();
+  await click(page, '我明白，进入心屿 ↗');
   // Check again after each test, including hydration and timer cleanup errors.
   Object.assign(page, { appErrors: errors });
 });
@@ -52,6 +54,12 @@ test('check-in, grounding timer, reflection, reload and confirmed deletion', asy
   await page.locator('.delete-button').first().click();
   await click(page, '确认删除');
   await expect(page.locator('.full-record')).toHaveCount(3);
+});
+
+test('first-use explanation is remembered in the same browser', async ({ page }) => {
+  await page.reload();
+  await expect(page.getByRole('heading', { name: '欢迎来到心屿' })).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: '嗨，今天的你还好吗？' })).toBeVisible();
 });
 
 for (const id of ['thought', 'plan']) {
@@ -120,7 +128,7 @@ test('user markup stays literal and clearing records persists across reload', as
   await expect(page.locator('.full-record').first()).toContainText('<img src=x onerror=alert(1)>');
   await expect(page.locator('.full-record img')).toHaveCount(0);
   await click(page, '本地数据说明');
-  await expect(page.locator('.privacy-copy')).toContainText('尚未接入真实 AI');
+  await expect(page.locator('.privacy-copy')).toContainText('AI 情境练习');
   await click(page, '清空所有本地记录');
   await click(page, '确认清空');
   await page.reload();
@@ -163,12 +171,41 @@ test('responsive layout, modal keyboard dismissal and timer cleanup', async ({ p
   expect(await page.locator('#dialog').evaluate(el => el.getBoundingClientRect().width < window.innerWidth)).toBe(true);
 });
 
+test('AI scenario has a complete labeled fallback flow and saves its reflection', async ({ page }) => {
+  await page.locator('#page').getByRole('button', { name: '进入情境 ↗', exact: true }).click();
+  await expect(page.locator('#dialog-title')).toHaveText('练习表达自己的边界');
+  await page.locator('#dialog').getByRole('button', { name: '进入情境 ↗', exact: true }).click();
+  for (const answer of ['你拿我的成绩开玩笑时，我会不舒服。', '请不要再在大家面前说我的成绩。', '我们可以聊点别的，谢谢。']) {
+    await page.locator('#scenario-answer').fill(answer);
+    await click(page, '发送表达 →');
+    await expect(page.locator('.scenario-message.assistant').last()).not.toContainText('正在想怎么回应');
+  }
+  await expect(page.locator('#dialog-title')).toHaveText('这次练习完成了');
+  await expect(page.locator('.source-pill')).toHaveText('预设练习');
+  await expect(page.locator('.scenario-feedback')).toContainText('表达边界');
+  await click(page, '保存练习 ✓');
+  await expect(page.locator('#toast')).toContainText('情境练习已保存');
+  await recordsView(page);
+  await expect(page.locator('.full-record').first()).toContainText('表达边界情境练习');
+  await expect(page.locator('.full-record').first()).toContainText('请不要再在大家面前说我的成绩');
+});
+
+test('AI scenario immediately stops for explicit risk language', async ({ page }) => {
+  await page.locator('#page').getByRole('button', { name: '进入情境 ↗', exact: true }).click();
+  await page.locator('#dialog').getByRole('button', { name: '进入情境 ↗', exact: true }).click();
+  await page.locator('#scenario-answer').fill('我现在就想伤害自己');
+  await click(page, '发送表达 →');
+  await expect(page.locator('#dialog-title')).toHaveText('你可以寻求身边的帮助');
+  await expect(page.locator('a[href="tel:12356"]')).toHaveCount(1);
+});
+
 test('storage failure remains usable and tells the user changes are temporary', async ({ page }) => {
   await page.addInitScript(() => {
     Storage.prototype.getItem = () => { throw new DOMException('blocked', 'SecurityError'); };
     Storage.prototype.setItem = () => { throw new DOMException('blocked', 'SecurityError'); };
   });
   await page.reload();
+  await click(page, '我明白，进入心屿 ↗');
   await click(page, '开始情绪签到 ↗');
   await click(page, '记录此刻，看看推荐 ↗');
   await expect(page.locator('#toast')).toContainText('变更仅在当前页面有效');
@@ -180,7 +217,7 @@ test('storage failure remains usable and tells the user changes are temporary', 
 test('server health and response headers match the development preview', async ({ request }) => {
   const response = await request.get('/api/health');
   expect(response.status()).toBe(200);
-  expect(await response.json()).toEqual({ status: 'ok', service: 'mental-lab', ai: 'not-configured', storage: 'browser-local' });
+  expect(await response.json()).toEqual({ status: 'ok', service: 'mental-lab', ai: 'not-configured', model: 'Qwen3.5-27B', storage: 'browser-local' });
   expect(response.headers()['cache-control']).toBe('no-store');
   expect(response.headers()['x-content-type-options']).toBe('nosniff');
 });

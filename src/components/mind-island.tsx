@@ -6,9 +6,13 @@ import { exercises, moods, newRecord, readRecords, recommendation, needsSupport,
 import { steps } from '@/lib/exercises';
 import { Icon } from './icon';
 import { Intensity, Modal, MoodButtons, PracticeTimer } from './practice-ui';
+import { ScenarioPractice } from './scenario-practice';
+import { Onboarding } from './onboarding';
 
 type View = 'today' | 'exercises' | 'records';
-type Screen = 'checkin' | 'recommendation' | 'intro' | 'practice' | 'review' | 'complete' | 'help' | 'privacy' | 'clear' | 'delete' | null;
+type Screen = 'checkin' | 'recommendation' | 'intro' | 'practice' | 'review' | 'complete' | 'scenario' | 'help' | 'privacy' | 'clear' | 'delete' | null;
+type AIStatus = 'checking' | 'configured' | 'not-configured';
+const onboardingKey = 'mind-island-onboarding-v1';
 const navigation: { id: View; title: string; icon: string }[] = [
   { id: 'today', title: '今日空间', icon: 'grid' },
   { id: 'exercises', title: '练习室', icon: 'leaf' },
@@ -27,6 +31,19 @@ function loadRecords(): PracticeRecord[] {
     const raw = localStorage.getItem(storageKey);
     return raw === null ? seedRecords() : readRecords(raw);
   } catch { return seedRecords(); }
+}
+
+function needsOnboarding() {
+  try { return localStorage.getItem(onboardingKey) !== 'accepted'; }
+  catch { return true; }
+}
+
+function ScenarioCard({ onStart }: { onStart: () => void }) {
+  return <section className="scenario-card">
+    <div className="scenario-card-icon"><Icon name="message" /></div>
+    <div><span className="scenario-kicker">AI 情境练习 · 3 轮</span><h2>练习向同学表达边界</h2><p>在一个安全、有限的模拟场景里，说清自己的感受和希望。</p></div>
+    <button className="primary" onClick={onStart}>进入情境 <span>↗</span></button>
+  </section>;
 }
 
 function ExerciseCard({ exercise, onStart }: { exercise: Exercise; onStart: (id: ExerciseId) => void }) {
@@ -49,6 +66,8 @@ function Recent({ record, onDelete }: { record: PracticeRecord; onDelete?: (id: 
 
 function Workspace() {
   const [records, setRecords] = useState(loadRecords);
+  const [showOnboarding, setShowOnboarding] = useState(needsOnboarding);
+  const [aiStatus, setAIStatus] = useState<AIStatus>('checking');
   const [now] = useState(() => new Date());
   const [view, setView] = useState<View>('today');
   const [filter, setFilter] = useState('全部');
@@ -75,10 +94,27 @@ function Workspace() {
     return () => window.clearTimeout(timeout);
   }, [message]);
 
+  useEffect(() => {
+    let active = true;
+    fetch('/api/health', { cache: 'no-store' }).then(response => response.json()).then((value: unknown) => {
+      if (!active || !value || typeof value !== 'object') return;
+      setAIStatus((value as Record<string, unknown>).ai === 'configured' ? 'configured' : 'not-configured');
+    }).catch(() => { if (active) setAIStatus('not-configured'); });
+    return () => { active = false; };
+  }, []);
+
   function persist(next: PracticeRecord[]) {
     setRecords(next);
     try { localStorage.setItem(storageKey, JSON.stringify(next)); return true; }
     catch { setMessage('浏览器未允许保存，变更仅在当前页面有效；刷新后请检查记录'); return false; }
+  }
+  function acceptOnboarding() {
+    try { localStorage.setItem(onboardingKey, 'accepted'); } catch { /* Continue for this browser session. */ }
+    setShowOnboarding(false);
+  }
+  function completeScenario(summary: string) {
+    persist([newRecord({ kind: 'exercise', title: '表达边界情境练习', note: summary, helpful: '完成情境练习' }), ...records]);
+    setScreen(null); setMessage('情境练习已保存到我的记录');
   }
   function navigate(next: View) { setView(next); window.scrollTo({ top: 0 }); }
   function checkin(selected = '') { setMood(selected); setIntensity(5); setNote(''); setScreen('checkin'); }
@@ -124,7 +160,7 @@ function Workspace() {
         <div className="sidebar-bottom"><button className="support-link" onClick={() => setScreen('help')}><Icon name="lifebuoy" />我需要一些帮助 <span>↗</span></button><div className="profile"><div className="avatar">Y</div><div>我的小岛<small>今天也在慢慢成长</small></div><span className="profile-spark">✧</span></div></div>
       </aside>
       <main>
-        <header className="topbar"><div><span className="breadcrumb">我的小岛</span><span className="slash">/</span><span id="page-crumb">{navigation.find(n => n.id === view)?.title}</span></div><div className="topbar-right"><span className="demo-badge"><i />开发预览</span><button className="icon-button" aria-label="寻求帮助" title="寻求帮助" onClick={() => setScreen('help')}><Icon name="lifebuoy" /></button><button className="icon-button" aria-label="本地数据说明" onClick={() => setScreen('privacy')}><Icon name="shield" /></button><div className="small-avatar">Y</div></div></header>
+        <header className="topbar"><div><span className="breadcrumb">我的小岛</span><span className="slash">/</span><span id="page-crumb">{navigation.find(n => n.id === view)?.title}</span></div><div className="topbar-right"><span className={`demo-badge ${aiStatus}`}><i />{aiStatus === 'configured' ? 'AI 已连接' : aiStatus === 'checking' ? '正在检查 AI' : '预设模式'}</span><button className="icon-button" aria-label="寻求帮助" title="寻求帮助" onClick={() => setScreen('help')}><Icon name="lifebuoy" /></button><button className="icon-button" aria-label="本地数据说明" onClick={() => setScreen('privacy')}><Icon name="shield" /></button><div className="small-avatar">Y</div></div></header>
         <div id="page" className="page">
           <div className="eyebrow">{headings[0]}</div><div className="welcome"><div><h1>{headings[1]}<span aria-hidden="true">✧</span></h1><p>{headings[2]}</p></div>{view === 'today' && <div className="date-pill"><Icon name="calendar" />{now.toLocaleDateString('zh-CN', { month: 'long', day: 'numeric', weekday: 'long' })}</div>}</div>
           {view === 'today' && <>
@@ -136,9 +172,11 @@ function Workspace() {
               })}</div><p>每一次停下来，都是在照顾自己。<br />{records.some(r => r.demo) ? '含示例记录' : '来自你的记录'}</p></section>
             </div>
             <section><div className="section-heading"><div><h2>今天，想从哪里开始？</h2><p>为考试前的你，准备了三个小练习</p></div><button className="text-button" onClick={() => navigate('exercises')}>探索练习室 <span>↗</span></button></div><div className="exercise-grid">{exercises.map(ex => <ExerciseCard key={ex.id} exercise={ex} onStart={start} />)}</div></section>
+            <ScenarioCard onStart={() => setScreen('scenario')} />
             <div className="bottom-grid"><section className="checkin-card"><div className="small-heading"><h2>此刻的心情，像哪一种？</h2><span>没有标准答案</span></div><MoodButtons onSelect={checkin} /></section><section className="recent-card"><div className="small-heading"><h2>最近的小小进展</h2><button className="text-button" onClick={() => navigate('records')}>查看全部 ↗</button></div>{records.slice(0, 2).map(r => <Recent key={r.id} record={r} />)}{records.length === 0 && <p className="no-records">你的第一条记录，会从这里开始。</p>}</section></div>
           </>}
           {view === 'exercises' && <>
+            <ScenarioCard onStart={() => setScreen('scenario')} />
             <div className="filters" aria-label="练习分类">{['全部', '情绪调节', '想法整理', '行动计划'].map(f => <button key={f} className={`filter ${filter === f ? 'active' : ''}`} aria-pressed={filter === f} onClick={() => setFilter(f)}>{f}</button>)}</div>
             <div className="exercise-grid">{exercises.filter(e => filter === '全部' || e.category === filter).map(ex => <ExerciseCard key={ex.id} exercise={ex} onStart={start} />)}</div>
             <div className="library-intro">✧ 你可以随时暂停或跳过。练习的目的不是消除所有情绪，而是多一种照顾自己的方式。</div>
@@ -152,6 +190,9 @@ function Workspace() {
         <footer>每一种情绪，都值得被看见。<span>心理健康技能练习 · 不提供诊断或治疗</span></footer>
       </main>
     </div>
+
+    {showOnboarding && <Onboarding onAccept={acceptOnboarding} />}
+    {screen === 'scenario' && <ScenarioPractice onClose={close} onComplete={completeScenario} onHandoff={() => setScreen('help')} />}
 
     {screen === 'checkin' && <Modal key={screen} label="EMOTIONAL CHECK-IN · 情绪签到" title="先听听此刻的自己" onClose={close} actions={<><button className="secondary" onClick={close}>暂时不记录</button><button className="primary" onClick={saveCheckin}>记录此刻，看看推荐 ↗</button></>}>
       <p className="intro">用你舒服的方式记录。不想填写的内容，可以留空。</p><MoodButtons selected={mood} onSelect={setMood} /><Intensity value={intensity} onChange={setIntensity} />
@@ -183,10 +224,11 @@ function Workspace() {
     {screen === 'help' && <Modal key={screen} label="REAL-WORLD SUPPORT · 现实中的支持" title="你可以寻求身边的帮助" onClose={close} actions={<button className="secondary" onClick={close}>关闭帮助页</button>}>
       <p className="intro">如果你现在可能伤害自己或他人，或正在遭受伤害，请优先联系现实中的支持，不要独自等待这个页面的回应。</p>
       <div className="help-box"><strong>有紧急人身危险或医疗急症</strong><p>中国大陆可拨打 <a href="tel:110">110</a>（报警）或 <a href="tel:120">120</a>（医疗急救）。不在中国大陆时，请联系当地紧急服务。</p></div>
+      <div className="help-box"><strong>需要心理援助与支持</strong><p>中国大陆可拨打全国统一心理援助热线 <a href="tel:12356">12356</a>。如果暂时无法接通，请联系当地医疗机构或可信任的成年人。</p></div>
       <div className="help-box"><strong>找一个安全、可信任的人陪你</strong><p>可以是老师、朋友、家人或专业人员。如果某个人让你不安全，就选择其他人。可以直接说：“我现在不太安全，需要你陪我一起找帮助。”</p></div><p className="modal-hint">本页是资源展示，没有真人值守，也不会自动拨号、定位或通知任何人。</p>
     </Modal>}
     {screen === 'privacy' && <Modal key={screen} label="YOUR DATA · 数据说明" title="关于你的小岛记录" onClose={close} actions={<><button className="secondary" onClick={() => setScreen('clear')}>清空所有本地记录</button><button className="primary" onClick={close}>我知道了</button></>}>
-      <div className="privacy-copy"><p>这是开发预览，尚未接入真实 AI 或云端账号。推荐和练习引导由预设规则生成。</p><p>签到、练习和复盘只保存在当前浏览器，不会上传或跨设备同步。带“示例”标签的记录是模拟数据。请使用虚构内容体验，不要录入真实敏感信息。</p><p>本地存储没有加密；使用同一浏览器的人可能看到这些记录。你可以在“我的记录”中逐条删除，或在这里清空全部记录。</p></div>
+      <div className="privacy-copy"><p>签到、普通练习和复盘只保存在当前浏览器，不会上传或跨设备同步。带“示例”标签的记录是模拟数据。</p><p>在 AI 情境练习中，只有你主动发送的本轮对话会提交给服务器配置的模型服务。API Key 只保存在服务端，不会发送到浏览器。</p><p>本地存储没有加密；使用同一浏览器的人可能看到这些记录。请使用虚构内容体验。你可以在“我的记录”中逐条删除，或在这里清空全部记录。</p></div>
     </Modal>}
     {(screen === 'delete' || screen === 'clear') && <Modal key={screen} label="YOUR DATA · 删除记录" title={screen === 'delete' ? '删除这条记录？' : '清空所有本地记录？'} onClose={close} actions={<><button className="secondary" onClick={() => screen === 'delete' ? close() : setScreen('privacy')}>{screen === 'delete' ? '保留' : '返回'}</button><button className="primary" onClick={() => { const saved = persist(screen === 'delete' ? records.filter(r => r.id !== deleteId) : []); close(); if (saved) setMessage('本地记录已删除'); }}>{screen === 'delete' ? '确认删除' : '确认清空'}</button></>}><p className="intro">{screen === 'delete' ? '删除后无法恢复，其他记录不会受到影响。' : '包括示例、签到和练习记录，删除后无法恢复。'}</p></Modal>}
     <div id="toast" className={message ? 'toast-visible' : ''} role="status" aria-live="polite">{message}</div>

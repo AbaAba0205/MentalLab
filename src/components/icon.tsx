@@ -8,7 +8,8 @@ const paths: Record<string, string> = {
   clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
   flower: '<path d="M12 20C3 21 1 15 3 12c5-1 9 3 9 8Zm0 0c9 1 11-5 9-8-5-1-9 3-9 8Z" fill="currentColor" opacity=".35"/><path d="M12 16C4 10 8 4 12 2c4 2 8 8 0 14Z" fill="currentColor" opacity=".6"/><path d="M4 21h16"/>',
   cloud: '<path d="M5 17a5 5 0 0 1-1-10 7 7 0 0 1 13-1 5.5 5.5 0 0 1 1 11H5Z" fill="currentColor" opacity=".4"/><path d="M7 20h9m-6 3h3"/>',
-  sun: '<circle cx="12" cy="12" r="5" fill="currentColor" opacity=".5"/><path d="M12 1v2m0 18v2M1 12h2m18 0h2M4 4l2 2m12 12 2 2M4 20l2-2M18 6l2-2"/>'
+  sun: '<circle cx="12" cy="12" r="5" fill="currentColor" opacity=".5"/><path d="M12 1v2m0 18v2M1 12h2m18 0h2M4 4l2 2m12 12 2 2M4 20l2-2M18 6l2-2"/>',
+  message: '<path d="M21 13a7 7 0 0 1-7 7H7l-4 3 1.4-5A8 8 0 1 1 21 13Z"/><path d="M8 12h.01M12 12h.01M16 12h.01"/>',
 };
 // Only static, project-owned SVG paths are inserted here. Never pass user markup.
 export function Icon({ name }: { name: string }) {
