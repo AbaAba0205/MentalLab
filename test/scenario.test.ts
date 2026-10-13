@@ -85,7 +85,20 @@ test('provider sends server credentials and returns validated AI content', async
   assert.equal(endpoint, 'https://example.com/v1/chat/completions');
   assert.equal(authorization, 'Bearer secret-key');
   assert.equal(requestBody.model, 'Qwen3.5-27B');
+  assert.deepEqual(requestBody.chat_template_kwargs, { enable_thinking: false });
   assert.ok(Array.isArray(requestBody.messages));
+});
+
+test('provider only disables thinking for Qwen 3 models', async () => {
+  const requestBodies: Record<string, unknown>[] = [];
+  const fakeFetch = (async (_input: string | URL | Request, init?: RequestInit) => {
+    requestBodies.push(JSON.parse(String(init?.body)));
+    return Response.json({ choices: [{ message: { content: JSON.stringify({ reply: '好的。', coachHint: '表达清楚。', suggestions: [] }) } }] });
+  }) as typeof fetch;
+  await generateScenarioReply(oneTurn, { fetch: fakeFetch, env: { AI_API_KEY: 'key', AI_BASE_URL: 'https://example.com/v1', AI_MODEL: 'qwen3-32b' } });
+  await generateScenarioReply(oneTurn, { fetch: fakeFetch, env: { AI_API_KEY: 'key', AI_BASE_URL: 'https://example.com/v1', AI_MODEL: 'GLM-4.5' } });
+  assert.deepEqual(requestBodies[0].chat_template_kwargs, { enable_thinking: false });
+  assert.equal('chat_template_kwargs' in requestBodies[1], false);
 });
 
 test('provider errors use a labeled fallback instead of leaking details', async () => {

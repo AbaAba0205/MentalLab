@@ -82,6 +82,9 @@ export async function generateScenarioReply(
   const config = aiConfiguration(dependencies.env);
   if (!config.configured) return fallbackScenarioReply(messages, 'AI 尚未配置');
   const turn = messages.filter(message => message.role === 'user').length;
+  const qwenThinkingOptions = /^qwen3(?:\.5)?(?:[-_]|$)/i.test(config.model)
+    ? { chat_template_kwargs: { enable_thinking: false } }
+    : {};
   try {
     const response = await dependencies.fetch(chatCompletionsEndpoint(dependencies.env.AI_BASE_URL!), {
       method: 'POST',
@@ -91,6 +94,7 @@ export async function generateScenarioReply(
         temperature: 0.6,
         max_tokens: 450,
         messages: [{ role: 'system', content: systemPrompt }, ...messages],
+        ...qwenThinkingOptions,
       }),
       signal: AbortSignal.timeout(15_000),
       cache: 'no-store',
