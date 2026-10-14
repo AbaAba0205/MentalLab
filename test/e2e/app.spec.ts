@@ -171,6 +171,49 @@ test('responsive layout, modal keyboard dismissal and timer cleanup', async ({ p
   expect(await page.locator('#dialog').evaluate(el => el.getBoundingClientRect().width < window.innerWidth)).toBe(true);
 });
 
+test('refreshed interface keeps readable text, touch targets and narrow layouts', async ({ page }, testInfo) => {
+  // Check rendered contrast rather than locking tests to particular palette values.
+  for (const selector of ['.hero .primary', '.exercise-card h3', '.exercise-card p', '.scenario-card p', '.scenario-card .primary']) {
+    const ratios = await page.locator(selector).evaluateAll(elements => elements.map(element => {
+      const rgb = (color: string) => (color.match(/[\d.]+/g) || []).map(Number);
+      const luminance = (channels: number[]) => channels.slice(0, 3).map(value => {
+        const srgb = value / 255;
+        return srgb <= .04045 ? srgb / 12.92 : ((srgb + .055) / 1.055) ** 2.4;
+      }).reduce((sum, value, index) => sum + value * [.2126, .7152, .0722][index], 0);
+      let surface: Element | null = element;
+      let background = [255, 255, 255];
+      while (surface) {
+        const color = rgb(getComputedStyle(surface).backgroundColor);
+        if (color.length === 3 || color[3] === 1) { background = color; break; }
+        surface = surface.parentElement;
+      }
+      const foreground = luminance(rgb(getComputedStyle(element).color));
+      const backdrop = luminance(background);
+      return (Math.max(foreground, backdrop) + .05) / (Math.min(foreground, backdrop) + .05);
+    }));
+    for (const ratio of ratios) expect(ratio, selector).toBeGreaterThanOrEqual(4.5);
+  }
+  for (const selector of ['.round-arrow', '.hero .primary', '.icon-button', '.nav-item']) {
+    for (const target of await page.locator(selector).all()) {
+      const bounds = await target.boundingBox();
+      expect(bounds!.width, selector).toBeGreaterThanOrEqual(44);
+      expect(bounds!.height, selector).toBeGreaterThanOrEqual(44);
+    }
+  }
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  expect(await page.locator('.exercise-card').first().evaluate(element => getComputedStyle(element).transitionDuration)).toBe('0s');
+  const height = testInfo.project.use.viewport!.height;
+  for (const width of [360, 768, 1024]) {
+    await page.setViewportSize({ width, height });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    await click(page, '开始情绪签到 ↗');
+    const dialog = page.locator('#dialog');
+    expect(await dialog.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);
+    await expect(dialog.getByRole('button', { name: '记录此刻，看看推荐 ↗' })).toBeVisible();
+    await page.keyboard.press('Escape');
+  }
+});
+
 test('AI scenario has a complete labeled fallback flow and saves its reflection', async ({ page }) => {
   await page.locator('#page').getByRole('button', { name: '进入情境 ↗', exact: true }).click();
   await expect(page.locator('#dialog-title')).toHaveText('练习表达自己的边界');

@@ -164,7 +164,7 @@ function Workspace() {
         <div id="page" className="page">
           <div className="eyebrow">{headings[0]}</div><div className="welcome"><div><h1>{headings[1]}<span aria-hidden="true">✧</span></h1><p>{headings[2]}</p></div>{view === 'today' && <div className="date-pill"><Icon name="calendar" />{now.toLocaleDateString('zh-CN', { month: 'long', day: 'numeric', weekday: 'long' })}</div>}</div>
           {view === 'today' && <>
-            <div className="hero-grid"><section className="hero"><div className="hero-copy"><span className="hero-label">TAKE A BREATH</span><h2>不用急着找到答案，<br />先照顾此刻的自己。</h2><p>从一次情绪签到开始，<br />找到今天适合你的那一小步。</p><button className="primary" onClick={() => checkin()}>开始情绪签到 <span>↗</span></button></div><Image className="hero-art" src="/hero.svg" alt="" width={310} height={265} priority /></section>
+            <div className="hero-grid"><section className="hero"><div className="hero-copy"><span className="hero-label">TAKE A BREATH</span><h2>不用急着找到答案，<br />先照顾此刻的自己。</h2><p>从一次情绪签到开始，<br />找到今天适合你的那一小步。</p><button className="primary" onClick={() => checkin()}>开始情绪签到 <span>↗</span></button></div><Image className="hero-art" src="/island-garden.svg" alt="" width={310} height={265} priority /></section>
               <section className="week-card"><div className="card-heading">本周的小脚印<span className="tiny-pill">近 7 天</span></div><div className="week-number">{completed}<span>次用心练习</span></div><div className="week-bars">{Array.from({ length: 7 }, (_, i) => {
                 const day = new Date(now); day.setDate(day.getDate() - 6 + i);
                 const count = records.filter(r => new Date(r.date).toDateString() === day.toDateString()).length;
