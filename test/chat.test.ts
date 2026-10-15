@@ -113,6 +113,19 @@ test('unconfigured or failed models use clear preset content without leaking sec
   assert.equal(isChatReply({ ...supportReply(), reply: '' }), false);
 });
 
+test('malformed first provider response is retried before using fallback', async () => {
+  let calls = 0;
+  const fetchMock = (async () => {
+    calls += 1;
+    const content = calls === 1 ? '{"reply":MISSING_PLACEHOLDER}' : JSON.stringify({ reply: '我在听，可以慢慢说。', needsSupport: false, exerciseId: null });
+    return Response.json({ choices: [{ message: { content } }] });
+  }) as typeof fetch;
+  const result = await generateChatReply(user('今天有点累'), { env, fetch: fetchMock });
+  assert.equal(calls, 2);
+  assert.equal(result.source, 'ai');
+  assert.equal(result.reply, '我在听，可以慢慢说。');
+});
+
 test('chat route validates origin, body, rate limits and still provides urgent support', async () => {
   clearRateLimitsForTests();
   const crossSite = new Request('http://localhost/api/chat/turn', { method: 'POST', headers: { origin: 'https://evil.example' }, body: '{}' });

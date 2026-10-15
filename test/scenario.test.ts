@@ -58,7 +58,7 @@ test('fallback is clearly labeled and completes after three user turns', () => {
 });
 
 test('AI configuration requires both secret and base URL and normalizes endpoints', () => {
-  assert.deepEqual(aiConfiguration({}), { configured: false, model: 'Qwen3.5-27B' });
+  assert.deepEqual(aiConfiguration({}), { configured: false, model: 'DeepSeek-V4.1-Flash' });
   assert.deepEqual(aiConfiguration({ AI_API_KEY: 'key', AI_BASE_URL: 'https://example.com/v1', AI_MODEL: 'GLM-4.5' }), { configured: true, model: 'GLM-4.5' });
   assert.equal(chatCompletionsEndpoint('https://example.com/v1/'), 'https://example.com/v1/chat/completions');
   assert.equal(chatCompletionsEndpoint('https://example.com/chat/completions'), 'https://example.com/chat/completions');
@@ -80,25 +80,13 @@ test('provider sends server credentials and returns validated AI content', async
     requestBody = JSON.parse(String(init?.body));
     return Response.json({ choices: [{ message: { content: JSON.stringify({ reply: '我知道了，你希望我怎么做？', coachHint: '提出具体请求。', suggestions: ['请不要再评论我的成绩。'] }) } }] });
   }) as typeof fetch;
-  const result = await generateScenarioReply(oneTurn, { fetch: fakeFetch, env: { AI_API_KEY: 'secret-key', AI_BASE_URL: 'https://example.com/v1', AI_MODEL: 'Qwen3.5-27B' } });
+  const result = await generateScenarioReply(oneTurn, { fetch: fakeFetch, env: { AI_API_KEY: 'secret-key', AI_BASE_URL: 'https://example.com/v1', AI_MODEL: 'DeepSeek-V4.1-Flash' } });
   assert.equal(result.source, 'ai');
   assert.equal(endpoint, 'https://example.com/v1/chat/completions');
   assert.equal(authorization, 'Bearer secret-key');
-  assert.equal(requestBody.model, 'Qwen3.5-27B');
-  assert.deepEqual(requestBody.chat_template_kwargs, { enable_thinking: false });
+  assert.equal(requestBody.model, 'DeepSeek-V4.1-Flash');
+  assert.equal('chat_template_kwargs' in requestBody, false);
   assert.ok(Array.isArray(requestBody.messages));
-});
-
-test('provider only disables thinking for Qwen 3 models', async () => {
-  const requestBodies: Record<string, unknown>[] = [];
-  const fakeFetch = (async (_input: string | URL | Request, init?: RequestInit) => {
-    requestBodies.push(JSON.parse(String(init?.body)));
-    return Response.json({ choices: [{ message: { content: JSON.stringify({ reply: '好的。', coachHint: '表达清楚。', suggestions: [] }) } }] });
-  }) as typeof fetch;
-  await generateScenarioReply(oneTurn, { fetch: fakeFetch, env: { AI_API_KEY: 'key', AI_BASE_URL: 'https://example.com/v1', AI_MODEL: 'qwen3-32b' } });
-  await generateScenarioReply(oneTurn, { fetch: fakeFetch, env: { AI_API_KEY: 'key', AI_BASE_URL: 'https://example.com/v1', AI_MODEL: 'GLM-4.5' } });
-  assert.deepEqual(requestBodies[0].chat_template_kwargs, { enable_thinking: false });
-  assert.equal('chat_template_kwargs' in requestBodies[1], false);
 });
 
 test('provider errors use a labeled fallback instead of leaking details', async () => {

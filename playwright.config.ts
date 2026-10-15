@@ -15,7 +15,7 @@ export default defineConfig({
   webServer: {
     command: 'npm run start -- --port 3100',
     // Test fixtures must not spend tokens or submit synthetic prompts to a real provider.
-    env: { AI_API_KEY: '', AI_BASE_URL: '', AI_MODEL: 'Qwen3.5-27B' },
+    env: { AI_API_KEY: '', AI_BASE_URL: '', AI_MODEL: 'DeepSeek-V4.1-Flash' },
     url: 'http://127.0.0.1:3100/api/health',
     reuseExistingServer: false,
     timeout: 60_000,

@@ -8,8 +8,34 @@ import { TrainingSession } from './training-session';
 import { Icon } from './icon';
 
 type Entry = ChatMessage & { result?: ChatReply; trainingState?: 'skipped' | 'saved' };
-export function CompanionChat({ active, onHandoff, onSave }: {
-  active: boolean; onHandoff: () => void; onSave: (record: PracticeRecord) => boolean;
+
+function AnimatedReply({ text, animate }: { text: string; animate: boolean }) {
+  const characters = Array.from(text);
+  const [visible, setVisible] = useState(animate ? 0 : characters.length);
+
+  useEffect(() => {
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!animate || reduceMotion) {
+      const frame = window.requestAnimationFrame(() => setVisible(characters.length));
+      return () => window.cancelAnimationFrame(frame);
+    }
+    let index = 0;
+    const interval = window.setInterval(() => {
+      index += 1;
+      setVisible(index);
+      if (index >= characters.length) window.clearInterval(interval);
+    }, 22);
+    return () => window.clearInterval(interval);
+  }, [animate, text, characters.length]);
+
+  const typing = visible < characters.length;
+  return <p className="chat-reply" data-typing={typing ? 'true' : undefined} aria-label={text}>
+    {characters.slice(0, visible).join('')}{typing && <span className="typing-cursor" aria-hidden="true" />}
+  </p>;
+}
+
+export function CompanionChat({ active, model, onHandoff, onSave }: {
+  active: boolean; model: string; onHandoff: () => void; onSave: (record: PracticeRecord) => boolean;
 }) {
   const [messages, setMessages] = useState<Entry[]>([]);
   const [input, setInput] = useState('');
@@ -72,14 +98,16 @@ export function CompanionChat({ active, onHandoff, onSave }: {
     setMessages(previous => [...previous, { role: 'assistant', content: result.reply, result }]);
   }
   return <section className="companion" aria-label="随心聊">
-    <div className="companion-top"><div className="companion-identity"><span className="companion-avatar"><Icon name="leaf" /></span><div><strong>心屿陪伴导师</strong><span>AI 陪伴 · 按你的节奏来</span></div></div>
+    <div className="companion-top"><div className="companion-identity"><span className="companion-avatar"><Icon name="leaf" /></span><div><strong>心屿陪伴导师</strong><span>AI 陪伴 · {model} · 按你的节奏来</span></div></div>
       <button className="text-button" disabled={loading || !messages.length} onClick={() => setConfirmClear(true)}>清空对话</button></div>
     <div className="chat-log" ref={log} role="log" aria-label="聊天记录" aria-live="polite" aria-relevant="additions text">
       <div className="chat-message assistant"><span className="chat-author">心屿</span><p>{CHAT_GREETING}</p></div>
       {messages.map((message, index) => {
         const exercise = message.result?.exerciseId ? getExercise(message.result.exerciseId) : null;
+        const animate = message.role === 'assistant' && index === messages.length - 1 && message.result?.source !== 'safety';
         return <div key={index} className={'chat-message ' + message.role}>
-          <span className="chat-author">{message.role === 'user' ? '我' : '心屿'}{message.result && <span className="chat-source">{message.result.source === 'ai' ? 'AI 回应' : message.result.source === 'safety' ? '现实支持' : '预设回应 · AI 暂时不可用'}</span>}</span><p>{message.content}</p>
+          <span className="chat-author">{message.role === 'user' ? '我' : '心屿'}{message.result && <span className="chat-source">{message.result.source === 'ai' ? 'AI 回应' : message.result.source === 'safety' ? '现实支持' : '预设回应 · AI 暂时不可用'}</span>}</span>
+          {message.role === 'assistant' ? <AnimatedReply text={message.content} animate={animate} /> : <p>{message.content}</p>}
           {exercise && !handoff && <div className="chat-training-card">
             <span className="training-kicker">可选的小训练 · {exercise.time}</span><h3>{exercise.title}</h3><p>{exercise.description}</p>
             {message.trainingState ? <p className="training-status">{message.trainingState === 'saved' ? '已完成，本次练习可在“我的记录”查看。' : '已跳过，我们按你的节奏聊。'}</p>
@@ -98,7 +126,7 @@ export function CompanionChat({ active, onHandoff, onSave }: {
     </div>
     {handoff && <div className="chat-support" role="status"><strong>先照顾现实中的安全</strong><p>这段普通聊天和训练已暂停。若有紧急危险，中国大陆可联系 110 或 120；其他地区请联系当地紧急服务。可以找安全、可信任的人陪着你。</p><button className="primary" onClick={onHandoff}>查看现实支持</button></div>}
     {!messages.length && <div className="chat-starters" aria-label="聊天话题">{['今天有点累，想聊聊', '想到考试，我有些紧张', '我想试一个小练习'].map(text => <button key={text} onClick={() => { setInput(text); textarea.current?.focus(); }}>{text}</button>)}</div>}
-    <form className="chat-composer" onSubmit={event => { event.preventDefault(); void send(); }}>
+    <form className="chat-composer" hidden={handoff || confirmClear} onSubmit={event => { event.preventDefault(); void send(); }}>
       <label htmlFor="chat-input">想说什么，都可以慢慢来</label><textarea ref={textarea} id="chat-input" maxLength={1000} disabled={loading || handoff} value={input} onChange={event => setInput(event.target.value)} placeholder={handoff ? '先联系现实中的支持，让安全、可信任的人陪着你。' : '从今天的一件小事开始…'} onKeyDown={event => {
         if ((event.ctrlKey || event.metaKey) && event.key === 'Enter' && !event.nativeEvent.isComposing) { event.preventDefault(); void send(); }
       }} />

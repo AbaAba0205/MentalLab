@@ -264,7 +264,7 @@ test('storage failure remains usable and tells the user changes are temporary', 
 test('server health and response headers match the development preview', async ({ request }) => {
   const response = await request.get('/api/health');
   expect(response.status()).toBe(200);
-  expect(await response.json()).toEqual({ status: 'ok', service: 'mental-lab', ai: 'not-configured', model: 'Qwen3.5-27B', storage: 'browser-local' });
+  expect(await response.json()).toEqual({ status: 'ok', service: 'mental-lab', ai: 'not-configured', model: 'DeepSeek-V4.1-Flash', storage: 'browser-local' });
   expect(response.headers()['cache-control']).toBe('no-store');
   expect(response.headers()['x-content-type-options']).toBe('nosniff');
 });

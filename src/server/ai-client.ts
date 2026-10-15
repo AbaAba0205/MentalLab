@@ -21,7 +21,7 @@ interface ModelReply {
 export function aiConfiguration(env: AIEnvironment = process.env as AIEnvironment): { configured: boolean; model: string } {
   return {
     configured: Boolean(env.AI_API_KEY?.trim() && env.AI_BASE_URL?.trim()),
-    model: env.AI_MODEL?.trim() || 'Qwen3.5-27B',
+    model: env.AI_MODEL?.trim() || 'DeepSeek-V4.1-Flash',
   };
 }
 
@@ -101,13 +101,11 @@ export async function requestModelText(
 ): Promise<string> {
   const config = aiConfiguration(dependencies.env);
   if (!config.configured) throw new Error('AI is not configured');
-  const qwenThinkingOptions = /^qwen3(?:\.5)?(?:[-_]|$)/i.test(config.model)
-    ? { chat_template_kwargs: { enable_thinking: false } } : {};
   const response = await dependencies.fetch(chatCompletionsEndpoint(dependencies.env.AI_BASE_URL!), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + dependencies.env.AI_API_KEY!.trim() },
     body: JSON.stringify({ model: config.model, temperature: 0.6, max_tokens: 700,
-      messages: [{ role: 'system', content: prompt }, ...messages], ...qwenThinkingOptions }),
+      messages: [{ role: 'system', content: prompt }, ...messages] }),
     signal: AbortSignal.timeout(15_000), cache: 'no-store',
   });
   if (!response.ok) throw new Error('Provider unavailable');

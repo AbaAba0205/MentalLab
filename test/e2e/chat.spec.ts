@@ -17,6 +17,14 @@ test('companion is the default home and courses have an honest reserved entry', 
   await expect(page.getByRole('heading', { name: '随心聊，慢慢说' })).toBeVisible();
   await expect(page.locator('nav [data-view="chat"]')).toHaveAttribute('aria-current', 'page');
   await expect(page.getByRole('log')).toContainText('AI 心理陪伴导师');
+  await expect(page.locator('.companion-identity')).toContainText('DeepSeek-V4.1-Flash');
+  await expect(page.locator('.companion')).toHaveCSS('border-top-width', '0px');
+  await expect(page.locator('.chat-log')).toHaveCSS('overflow-y', 'visible');
+  const sendBox = await page.getByRole('button', { name: '发送消息 ↗' }).boundingBox();
+  const navigationBox = await page.locator('.sidebar').boundingBox();
+  expect(sendBox).not.toBeNull();
+  expect(navigationBox).not.toBeNull();
+  if (testInfo.project.name === 'mobile') expect(sendBox!.y + sendBox!.height).toBeLessThanOrEqual(navigationBox!.y);
   await page.screenshot({ path: testInfo.outputPath('companion-home.png'), fullPage: true });
   await navigate(page, 'courses');
   await expect(page.getByRole('heading', { name: '课程正在慢慢准备中' })).toBeVisible();
@@ -27,6 +35,17 @@ test('companion is the default home and courses have an honest reserved entry', 
   await expect(page.locator('.exercise-card')).toHaveCount(3);
   await page.reload();
   await expect(page.getByRole('heading', { name: '随心聊，慢慢说' })).toBeVisible();
+});
+
+test('validated AI reply appears progressively and completes', async ({ page }) => {
+  const reply = '可以慢慢说，我会认真读你写下的每一句话，也不会催你马上整理好情绪。';
+  await page.route('**/api/chat/turn', route => route.fulfill({ json: { action: 'reply', source: 'ai', reply, exerciseId: null } }));
+  await page.locator('#chat-input').fill('我想聊聊今天');
+  await click(page, '发送消息 ↗');
+  const message = page.locator('.chat-message.assistant').last();
+  await expect(message.locator('.chat-reply')).toHaveAttribute('data-typing', 'true');
+  await expect(message.locator('.chat-reply')).toContainText(reply, { timeout: 5000 });
+  await expect(message.locator('.chat-reply')).not.toHaveAttribute('data-typing', 'true');
 });
 
 test('preset chat is labeled, retains context across navigation, and disappears on refresh', async ({ page }) => {

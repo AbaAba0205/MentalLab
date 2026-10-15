@@ -30,15 +30,20 @@ export function acceptableCompanionText(text: string): boolean {
 }
 export async function generateChatReply(messages: ChatMessage[], dependencies?: ProviderDependencies): Promise<ChatReply> {
   if (chatNeedsSupport(messages)) return supportReply();
-  try {
-    const raw = await requestModelText(companionPrompt, messages, dependencies);
-    const value: unknown = JSON.parse(raw.replace(/^\s*```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim());
-    if (!value || typeof value !== 'object') throw new Error('Invalid reply');
-    const result = value as Record<string, unknown>;
-    if (result.needsSupport === true) return supportReply();
-    if (result.needsSupport !== false || typeof result.reply !== 'string' || !result.reply.trim() || result.reply.length > 600 || !acceptableCompanionText(result.reply)) throw new Error('Unsafe or invalid reply');
-    const exerciseId = allowedTraining(result.exerciseId, messages);
-    if (result.exerciseId !== null && !exerciseId) throw new Error('Ineligible training');
-    return { action: 'reply', source: 'ai', reply: result.reply.trim(), exerciseId };
-  } catch { return fallbackChatReply(messages); }
+  // The configured provider occasionally returns an empty or malformed first response.
+  // Retry once, while applying the same validation before either response reaches the UI.
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const raw = await requestModelText(companionPrompt, messages, dependencies);
+      const value: unknown = JSON.parse(raw.replace(/^\s*```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim());
+      if (!value || typeof value !== 'object') throw new Error('Invalid reply');
+      const result = value as Record<string, unknown>;
+      if (result.needsSupport === true) return supportReply();
+      if (result.needsSupport !== false || typeof result.reply !== 'string' || !result.reply.trim() || result.reply.length > 600 || !acceptableCompanionText(result.reply)) throw new Error('Unsafe or invalid reply');
+      const exerciseId = allowedTraining(result.exerciseId, messages);
+      if (result.exerciseId !== null && !exerciseId) throw new Error('Ineligible training');
+      return { action: 'reply', source: 'ai', reply: result.reply.trim(), exerciseId };
+    } catch { /* retry, then use the reviewed fallback */ }
+  }
+  return fallbackChatReply(messages);
 }
