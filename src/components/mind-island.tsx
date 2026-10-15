@@ -140,7 +140,7 @@ function Workspace() {
   const completed = records.filter(r => r.kind === 'exercise' && now.getTime() - Date.parse(r.date) < 7 * 86400000).length;
 
   return <>
-    <div className="app-shell">
+    <div className={`app-shell${view === 'chat' ? ' chat-workspace' : ''}`}>
       <aside className="sidebar">
         <a className="brand" href="#chat" aria-label="心屿首页" onClick={e => { e.preventDefault(); navigate('chat'); }}><span className="brand-symbol">♥</span><span>心屿<small>MIND ISLAND</small></span></a>
         <div className="workspace-label">你的情绪小空间</div>
@@ -153,7 +153,7 @@ function Workspace() {
         <header className="topbar"><div><span className="breadcrumb">我的小岛</span><span className="slash">/</span><span id="page-crumb">{navigation.find(n => n.id === view)?.title}</span></div><div className="topbar-right"><span className={`demo-badge ${aiStatus}`}><i />{aiStatus === 'configured' ? 'AI 已配置' : aiStatus === 'checking' ? '正在检查 AI' : '预设模式'}</span><button className="icon-button" aria-label="寻求帮助" title="寻求帮助" onClick={() => setScreen('help')}><Icon name="lifebuoy" /></button><button className="icon-button" aria-label="本地数据说明" onClick={() => setScreen('privacy')}><Icon name="shield" /></button><div className="small-avatar">Y</div></div></header>
         <div id="page" className="page">
           <div className="eyebrow">{headings[0]}</div><div className="welcome"><div><h1>{headings[1]}<span aria-hidden="true">✧</span></h1><p>{headings[2]}</p></div>{view === 'today' && <div className="date-pill"><Icon name="calendar" />{now.toLocaleDateString('zh-CN', { month: 'long', day: 'numeric', weekday: 'long' })}</div>}</div>
-          <div hidden={view !== 'chat'}><CompanionChat active={view === 'chat'} model={aiModel} onHandoff={() => setScreen('help')} onSave={record => persist([record, ...records])} /></div>
+          <div className="chat-view" hidden={view !== 'chat'}><CompanionChat active={view === 'chat'} model={aiModel} onHandoff={() => setScreen('help')} onSave={record => persist([record, ...records])} /></div>
           {view === 'courses' && <Courses onPractice={() => navigate('exercises')} />}
           {view === 'today' && <>
             <div className="hero-grid"><section className="hero"><div className="hero-copy"><span className="hero-label">TAKE A BREATH</span><h2>不用急着找到答案，<br />先照顾此刻的自己。</h2><p>从一次情绪签到开始，<br />找到今天适合你的那一小步。</p><button className="primary" onClick={() => checkin()}>开始情绪签到 <span>↗</span></button></div><Image className="hero-art" src="/island-garden.svg" alt="" width={310} height={265} priority /></section>
