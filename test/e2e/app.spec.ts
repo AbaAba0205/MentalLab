@@ -8,9 +8,10 @@ test.beforeEach(async ({ page }) => {
   page.on('pageerror', error => errors.push(error.message));
   page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: '嗨，今天的你还好吗？' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '随心聊，慢慢说' })).toBeVisible();
   await expect(page.getByRole('heading', { name: '欢迎来到心屿' })).toBeVisible();
   await click(page, '我明白，进入心屿 ↗');
+  await page.locator('nav [data-view="today"]').click();
   // Check again after each test, including hydration and timer cleanup errors.
   Object.assign(page, { appErrors: errors });
 });
@@ -59,13 +60,14 @@ test('check-in, grounding timer, reflection, reload and confirmed deletion', asy
 test('first-use explanation is remembered in the same browser', async ({ page }) => {
   await page.reload();
   await expect(page.getByRole('heading', { name: '欢迎来到心屿' })).toHaveCount(0);
-  await expect(page.getByRole('heading', { name: '嗨，今天的你还好吗？' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '随心聊，慢慢说' })).toBeVisible();
 });
 
 for (const id of ['thought', 'plan']) {
   test(`${id} preserves previous answers, validates choices and saves feedback`, async ({ page }) => {
     await page.locator('nav [data-view="exercises"]').click();
     await page.locator(`[data-exercise="${id}"]`).click();
+    await page.locator('#intensity').fill('3');
     await click(page, '我想试试 ↗');
     if (id === 'plan') {
       await click(page, '下一步 →');
@@ -101,6 +103,7 @@ test('support interrupts check-in, exercise answers and reflection without savin
   await expect(page.locator('#dialog a[href="tel:120"]')).toHaveCount(1);
   await click(page, '关闭帮助页');
   await page.locator('[data-exercise="thought"]').click();
+  await page.locator('#intensity').fill('3');
   await click(page, '我想试试 ↗');
   await page.locator('#answer').fill('想伤害自己');
   await click(page, '下一步 →');
@@ -249,6 +252,7 @@ test('storage failure remains usable and tells the user changes are temporary', 
   });
   await page.reload();
   await click(page, '我明白，进入心屿 ↗');
+  await page.locator('nav [data-view="today"]').click();
   await click(page, '开始情绪签到 ↗');
   await click(page, '记录此刻，看看推荐 ↗');
   await expect(page.locator('#toast')).toContainText('变更仅在当前页面有效');

@@ -5,7 +5,7 @@ import { steps } from '../src/lib/exercises';
 import { GET } from '../src/app/api/health/route';
 
 test('recommendation boundaries choose an existing exercise', () => {
-  for (const [score, expected] of [[0, 'plan'], [3, 'plan'], [4, 'thought'], [6, 'thought'], [7, 'ground'], [10, 'ground']] as const) {
+  for (const [score, expected] of [[0, 'plan'], [3, 'plan'], [4, 'ground'], [6, 'ground'], [7, 'ground'], [10, 'ground']] as const) {
     assert.equal(recommendation(score), expected);
     assert.ok(exercises.some(e => e.id === expected));
   }
@@ -75,9 +75,9 @@ test('sample records are labeled, distinct and deterministic; empty records stay
   assert.deepEqual(readRecords('[]'), []);
 });
 
-test('each available exercise has three usable steps', () => {
+test('registered exercises expose usable steps without a fixed step count', () => {
   for (const exercise of exercises) {
-    assert.equal(steps[exercise.id].length, 3);
+    assert.ok(steps[exercise.id].length > 0);
     for (const step of steps[exercise.id]) assert.ok(step.title && step.intro && (step.prompt || step.placeholder || step.choices?.length));
   }
 });

@@ -1,6 +1,8 @@
 import { assessRisk } from './safety';
 
-export type ExerciseId = 'ground' | 'thought' | 'plan';
+import type { ExerciseId } from './training/registry';
+export { exercises } from './training/registry';
+export type { Exercise, ExerciseId } from './training/registry';
 export type RecordKind = 'checkin' | 'exercise';
 
 export interface PracticeRecord {
@@ -16,17 +18,6 @@ export interface PracticeRecord {
   demo: boolean;
 }
 
-export interface Exercise {
-  id: ExerciseId;
-  title: string;
-  subtitle: string;
-  category: string;
-  time: string;
-  icon: string;
-  color: string;
-  description: string;
-}
-
 // Keep the key so existing demo users retain their records after migration.
 export const storageKey = 'mind-island-demo-v1';
 
@@ -38,15 +29,9 @@ export const moods = [
   { id: 'angry', label: '有点烦躁', face: 'へ', color: '#d69994' },
 ];
 
-export const exercises: Exercise[] = [
-  { id: 'ground', title: '先稳一稳', subtitle: '给思绪一个温柔的暂停', category: '情绪调节', time: '2 分钟', icon: 'flower', color: 'mint', description: '把注意力带回此刻，从身边的小事开始。' },
-  { id: 'thought', title: '拆开一个担心', subtitle: '想法不一定就是事实', category: '想法整理', time: '5 分钟', icon: 'cloud', color: 'lavender', description: '换一个角度，看看考试前那个放不下的念头。' },
-  { id: 'plan', title: '考试前的小计划', subtitle: '迈出刚刚好的一小步', category: '行动计划', time: '3 分钟', icon: 'sun', color: 'peach', description: '把很多个“怎么办”，变成一个“我可以”。' },
-];
-
 export function recommendation(intensity: number): ExerciseId {
   if (!validIntensity(intensity) || intensity === null) throw new Error('Invalid intensity');
-  return intensity >= 7 ? 'ground' : intensity >= 4 ? 'thought' : 'plan';
+  return intensity >= 4 ? 'ground' : 'plan';
 }
 
 // Demonstration guard only; this is NOT a clinical risk assessment.

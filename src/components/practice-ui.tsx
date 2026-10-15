@@ -27,15 +27,15 @@ export function MoodButtons({ selected = '', onSelect }: { selected?: string; on
   </button>)}</div>;
 }
 
-export function Intensity({ value, onChange, label = '此刻的困扰有多强烈？' }: { value: number; onChange: (n: number) => void; label?: string }) {
+export function Intensity({ value, onChange, label = '此刻的困扰有多强烈？', id = 'intensity' }: { value: number; onChange: (n: number) => void; label?: string; id?: string }) {
   return <>
-    <label className="range-label" htmlFor="intensity">{label}<strong id="intensity-value">{value} <small>/ 10</small></strong></label>
-    <input id="intensity" type="range" min="0" max="10" value={value} onChange={e => onChange(Number(e.target.value))} />
+    <label className="range-label" htmlFor={id}>{label}<strong id={id + '-value'}>{value} <small>/ 10</small></strong></label>
+    <input id={id} type="range" min="0" max="10" value={value} onChange={e => onChange(Number(e.target.value))} />
     <div className="range-ends"><span>0 · 没有困扰</span><span>10 · 很难承受</span></div>
   </>;
 }
 
-export function PracticeTimer() {
+export function PracticeTimer({ id = 'timer-value' }: { id?: string }) {
   const [remaining, setRemaining] = useState(30);
   const [running, setRunning] = useState(false);
   const [started, setStarted] = useState(false);
@@ -58,7 +58,7 @@ export function PracticeTimer() {
     setRunning(true);
   }
   return <>
-    <div className="timer-ring"><strong id="timer-value">00:{String(remaining).padStart(2, '0')}</strong><small>给自己一点时间</small></div>
+    <div className="timer-ring"><strong id={id}>00:{String(remaining).padStart(2, '0')}</strong><small>给自己一点时间</small></div>
     <div className="timer-controls">
       <button className="secondary" onClick={toggle}>{running ? '暂停计时' : remaining === 0 ? '再来一次' : started ? '继续计时' : '开始计时'}</button>
       <button className="text-button" onClick={() => { setRunning(false); setStarted(false); setRemaining(30); }}>重置</button>

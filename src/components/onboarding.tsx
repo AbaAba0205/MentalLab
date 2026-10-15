@@ -10,7 +10,7 @@ export function Onboarding({ onAccept }: { onAccept: () => void }) {
       <p><strong>它是一位技能教练</strong><span>不提供疾病诊断、心理治疗或药物建议。</span></p>
       <p><strong>你可以自己决定</strong><span>随时暂停练习，不想填写的内容可以留空。</span></p>
       <p><strong>需要帮助时优先找现实中的人</strong><span>有紧急危险或无法保证安全时，请联系可信任的成年人或紧急服务。</span></p>
-      <p><strong>开发预览的数据方式</strong><span>记录保存在当前浏览器；只有你主动发送的情境练习文字会提交给配置的模型服务。</span></p>
+      <p><strong>开发预览的数据方式</strong><span>记录保存在当前浏览器；随心聊和情境练习中主动发送的文字及必要的近期对话会提交给配置的模型服务。随心聊刷新后消失，练习记录仅在你保存后留在当前浏览器。</span></p>
     </div>
   </Modal>;
 }

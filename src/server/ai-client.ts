@@ -6,7 +6,7 @@ export interface AIEnvironment {
   AI_MODEL?: string;
 }
 
-interface ProviderDependencies {
+export interface ProviderDependencies {
   fetch: typeof fetch;
   env: AIEnvironment;
 }
@@ -82,25 +82,8 @@ export async function generateScenarioReply(
   const config = aiConfiguration(dependencies.env);
   if (!config.configured) return fallbackScenarioReply(messages, 'AI 尚未配置');
   const turn = messages.filter(message => message.role === 'user').length;
-  const qwenThinkingOptions = /^qwen3(?:\.5)?(?:[-_]|$)/i.test(config.model)
-    ? { chat_template_kwargs: { enable_thinking: false } }
-    : {};
   try {
-    const response = await dependencies.fetch(chatCompletionsEndpoint(dependencies.env.AI_BASE_URL!), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${dependencies.env.AI_API_KEY!.trim()}` },
-      body: JSON.stringify({
-        model: config.model,
-        temperature: 0.6,
-        max_tokens: 450,
-        messages: [{ role: 'system', content: systemPrompt }, ...messages],
-        ...qwenThinkingOptions,
-      }),
-      signal: AbortSignal.timeout(15_000),
-      cache: 'no-store',
-    });
-    if (!response.ok) throw new Error(`Provider returned ${response.status}`);
-    const parsed = parseModelReply(modelText(await response.json()));
+    const parsed = parseModelReply(await requestModelText(systemPrompt, messages, dependencies));
     return {
       action: turn >= MAX_SCENARIO_TURNS ? 'complete' : 'continue',
       source: 'ai', riskLevel: 'low', ...parsed,
@@ -109,4 +92,24 @@ export async function generateScenarioReply(
   } catch {
     return fallbackScenarioReply(messages, 'AI 回复失败');
   }
+}
+
+/** Shared transport only. Each feature owns its prompt, validation and safety policy. */
+export async function requestModelText(
+  prompt: string, messages: ScenarioMessage[],
+  dependencies: ProviderDependencies = { fetch, env: process.env as AIEnvironment },
+): Promise<string> {
+  const config = aiConfiguration(dependencies.env);
+  if (!config.configured) throw new Error('AI is not configured');
+  const qwenThinkingOptions = /^qwen3(?:\.5)?(?:[-_]|$)/i.test(config.model)
+    ? { chat_template_kwargs: { enable_thinking: false } } : {};
+  const response = await dependencies.fetch(chatCompletionsEndpoint(dependencies.env.AI_BASE_URL!), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + dependencies.env.AI_API_KEY!.trim() },
+    body: JSON.stringify({ model: config.model, temperature: 0.6, max_tokens: 700,
+      messages: [{ role: 'system', content: prompt }, ...messages], ...qwenThinkingOptions }),
+    signal: AbortSignal.timeout(15_000), cache: 'no-store',
+  });
+  if (!response.ok) throw new Error('Provider unavailable');
+  return modelText(await response.json());
 }
