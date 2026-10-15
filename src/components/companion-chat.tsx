@@ -105,19 +105,19 @@ export function CompanionChat({ active, model, onHandoff, onSave }: {
     setMessages(previous => [...previous, { role: 'assistant', content: result.reply, result }]);
   }
   return <section className="companion" aria-label="随心聊">
-    <div className="companion-top"><div className="companion-identity"><span className="companion-avatar"><Icon name="leaf" /></span><div><strong>心屿陪伴导师</strong><span>AI 陪伴 · {model} · 按你的节奏来</span></div></div>
+    <div className="companion-top"><div className="companion-identity"><span className="companion-avatar"><Icon name="leaf" /></span><div><strong>心晴陪伴导师</strong><span>AI 陪伴 · {model} · 按你的节奏来</span></div></div>
       <button className="text-button" disabled={responding || !messages.length} onClick={() => setConfirmClear(true)}>清空对话</button></div>
     <div className="chat-log" ref={log} role="log" aria-label="聊天记录" aria-live="polite" aria-relevant="additions text" tabIndex={0} onScroll={event => {
       const element = event.currentTarget;
       followLatest.current = element.scrollHeight - element.scrollTop - element.clientHeight < 48;
     }}>
-      <div className="chat-message assistant"><span className="chat-author">心屿</span><p>{CHAT_GREETING}</p></div>
+      <div className="chat-message assistant"><span className="chat-author">心晴</span><p>{CHAT_GREETING}</p></div>
       {messages.map((message, index) => {
         const exercise = message.result?.exerciseId ? getExercise(message.result.exerciseId) : null;
         const typing = animation?.index === index;
         const content = typing ? Array.from(message.content).slice(0, visible).join('') : message.content;
         return <div key={index} className={'chat-message ' + message.role}>
-          <span className="chat-author">{message.role === 'user' ? '我' : '心屿'}{message.result && <span className="chat-source">{message.result.source === 'ai' ? 'AI 回应' : message.result.source === 'safety' ? '现实支持' : '预设回应 · AI 暂时不可用'}</span>}</span>
+          <span className="chat-author">{message.role === 'user' ? '我' : '心晴'}{message.result && <span className="chat-source">{message.result.source === 'ai' ? 'AI 回应' : message.result.source === 'safety' ? '现实支持' : '预设回应 · AI 暂时不可用'}</span>}</span>
           {message.role === 'assistant' ? <p className="chat-reply" data-typing={typing ? 'true' : undefined}>{content}{typing && <span className="typing-cursor" aria-hidden="true" />}</p> : <p>{message.content}</p>}
           {exercise && !handoff && !typing && <div className="chat-training-card">
             <span className="training-kicker">可选的小训练 · {exercise.time}</span><h3>{exercise.title}</h3><p>{exercise.description}</p>

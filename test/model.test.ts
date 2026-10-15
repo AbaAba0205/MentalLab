@@ -86,5 +86,5 @@ test('health endpoint reports actual integration status without caching', async 
   const response = GET();
   assert.equal(response.status, 200);
   assert.equal(response.headers.get('Cache-Control'), 'no-store');
-  assert.deepEqual(await response.json(), { status: 'ok', service: 'mental-lab', ai: 'not-configured', model: 'DeepSeek-V4.1-Flash', storage: 'browser-local' });
+  assert.deepEqual(await response.json(), { status: 'ok', service: 'xinqing', ai: 'not-configured', model: 'DeepSeek-V4.1-Flash', storage: 'browser-local' });
 });

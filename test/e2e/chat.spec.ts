@@ -11,7 +11,7 @@ async function send(page: Page, text: string) {
 test.beforeEach(async ({ page }, testInfo) => {
   await page.setExtraHTTPHeaders({ 'x-forwarded-for': 'e2e-' + testInfo.testId });
   await page.goto('/');
-  await click(page, '我明白，进入心屿 ↗');
+  await click(page, '我明白，进入心晴 ↗');
 });
 
 test('companion is the default home and courses have an honest reserved entry', async ({ page }, testInfo) => {

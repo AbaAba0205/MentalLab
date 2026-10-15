@@ -9,7 +9,7 @@ export interface ChatReply {
   exerciseId: ExerciseId | null;
 }
 export const MAX_CHAT_MESSAGES = 21;
-export const CHAT_GREETING = '我是心屿的 AI 心理陪伴导师。你可以说说今天的小事，也可以只说一句“有点累”。不想做练习也没关系，我们可以先聊聊。';
+export const CHAT_GREETING = '我是心晴的 AI 心理陪伴导师。你可以说说今天的小事，也可以只说一句“有点累”。不想做练习也没关系，我们可以先聊聊。';
 export function supportReply(): ChatReply {
   return { action: 'handoff', source: 'safety', exerciseId: null,
     reply: '谢谢你告诉我这些。你不需要独自承受，我们先把练习放一放。你现在是否安全？如果有正在发生的危险，请尽快联系身边安全、可信任的人或当地紧急服务。下方可以查看现实支持。' };

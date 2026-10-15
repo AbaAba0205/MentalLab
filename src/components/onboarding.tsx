@@ -3,9 +3,9 @@
 import { Modal } from './practice-ui';
 
 export function Onboarding({ onAccept }: { onAccept: () => void }) {
-  return <Modal label="BEFORE YOU BEGIN · 使用前说明" title="欢迎来到心屿" onClose={() => {}} dismissible={false}
-    actions={<button className="primary onboarding-accept" onClick={onAccept}>我明白，进入心屿 ↗</button>}>
-    <p className="intro">心屿面向 14–18 岁青少年，帮助你练习情绪调节、整理想法和人际表达。</p>
+  return <Modal label="BEFORE YOU BEGIN · 使用前说明" title="欢迎来到心晴" onClose={() => {}} dismissible={false}
+    actions={<button className="primary onboarding-accept" onClick={onAccept}>我明白，进入心晴 ↗</button>}>
+    <p className="intro">心晴面向 14–18 岁青少年，帮助你练习情绪调节、整理想法和人际表达。</p>
     <div className="onboarding-points">
       <p><strong>它是一位技能教练</strong><span>不提供疾病诊断、心理治疗或药物建议。</span></p>
       <p><strong>你可以自己决定</strong><span>随时暂停练习，不想填写的内容可以留空。</span></p>

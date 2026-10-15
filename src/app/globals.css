@@ -38,7 +38,7 @@ main { background: var(--paper); }
 .sidebar-divider { background: #dce4d7; }
 .sidebar-note { background: #f4e6c8; border: 1px solid #e6d7b7; border-radius: 60px 60px 18px 18px; padding-top: 28px; text-align: center; }
 .note-spark { color: #9b683a; }
-.sidebar-note p { color: #695638; font-size: 13px; }
+.sidebar-note p { color: #695638; font-size: 13px; white-space: pre-line; overflow-wrap: anywhere; }
 .note-hills span { background: #99b6a0; }
 .note-hills i { background: #658e7b; }
 .note-hills b { color: #fff1c9; }

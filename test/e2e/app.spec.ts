@@ -9,8 +9,8 @@ test.beforeEach(async ({ page }) => {
   page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
   await page.goto('/');
   await expect(page.getByRole('heading', { name: '随心聊，慢慢说' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: '欢迎来到心屿' })).toBeVisible();
-  await click(page, '我明白，进入心屿 ↗');
+  await expect(page.getByRole('heading', { name: '欢迎来到心晴' })).toBeVisible();
+  await click(page, '我明白，进入心晴 ↗');
   await page.locator('nav [data-view="today"]').click();
   // Check again after each test, including hydration and timer cleanup errors.
   Object.assign(page, { appErrors: errors });
@@ -59,7 +59,7 @@ test('check-in, grounding timer, reflection, reload and confirmed deletion', asy
 
 test('first-use explanation is remembered in the same browser', async ({ page }) => {
   await page.reload();
-  await expect(page.getByRole('heading', { name: '欢迎来到心屿' })).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: '欢迎来到心晴' })).toHaveCount(0);
   await expect(page.getByRole('heading', { name: '随心聊，慢慢说' })).toBeVisible();
 });
 
@@ -251,7 +251,7 @@ test('storage failure remains usable and tells the user changes are temporary', 
     Storage.prototype.setItem = () => { throw new DOMException('blocked', 'SecurityError'); };
   });
   await page.reload();
-  await click(page, '我明白，进入心屿 ↗');
+  await click(page, '我明白，进入心晴 ↗');
   await page.locator('nav [data-view="today"]').click();
   await click(page, '开始情绪签到 ↗');
   await click(page, '记录此刻，看看推荐 ↗');
@@ -264,7 +264,7 @@ test('storage failure remains usable and tells the user changes are temporary', 
 test('server health and response headers match the development preview', async ({ request }) => {
   const response = await request.get('/api/health');
   expect(response.status()).toBe(200);
-  expect(await response.json()).toEqual({ status: 'ok', service: 'mental-lab', ai: 'not-configured', model: 'DeepSeek-V4.1-Flash', storage: 'browser-local' });
+  expect(await response.json()).toEqual({ status: 'ok', service: 'xinqing', ai: 'not-configured', model: 'DeepSeek-V4.1-Flash', storage: 'browser-local' });
   expect(response.headers()['cache-control']).toBe('no-store');
   expect(response.headers()['x-content-type-options']).toBe('nosniff');
 });

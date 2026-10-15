@@ -11,6 +11,7 @@ import { Icon } from './icon';
 import { Intensity, Modal, MoodButtons } from './practice-ui';
 import { ScenarioPractice } from './scenario-practice';
 import { Onboarding } from './onboarding';
+import { SidebarReminder } from './sidebar-reminder';
 
 type View = 'chat' | 'courses' | 'today' | 'exercises' | 'records';
 type Screen = 'checkin' | 'recommendation' | 'training' | 'scenario' | 'help' | 'privacy' | 'clear' | 'delete' | null;
@@ -28,7 +29,7 @@ const subscribe = () => () => {};
 // Browser records must not be read during server rendering or overwrite the initial store.
 export default function MindIsland() {
   const mounted = useSyncExternalStore(subscribe, () => true, () => false);
-  return mounted ? <Workspace /> : <main className="rounded-3xl p-8" aria-busy="true"><h1>心屿</h1><p role="status">正在打开你的小岛…</p><noscript>请开启 JavaScript 后使用互动练习。</noscript></main>;
+  return mounted ? <Workspace /> : <main className="rounded-3xl p-8" aria-busy="true"><h1>心晴</h1><p role="status">正在打开你的小岛…</p><noscript>请开启 JavaScript 后使用互动练习。</noscript></main>;
 }
 
 function loadRecords(): PracticeRecord[] {
@@ -142,11 +143,10 @@ function Workspace() {
   return <>
     <div className={`app-shell${view === 'chat' ? ' chat-workspace' : ''}`}>
       <aside className="sidebar">
-        <a className="brand" href="#chat" aria-label="心屿首页" onClick={e => { e.preventDefault(); navigate('chat'); }}><span className="brand-symbol">♥</span><span>心屿<small>MIND ISLAND</small></span></a>
+        <a className="brand" href="#chat" aria-label="心晴首页" onClick={e => { e.preventDefault(); navigate('chat'); }}><span className="brand-symbol">♥</span><span>心晴<small>XINQING</small></span></a>
         <div className="workspace-label">你的情绪小空间</div>
         <nav aria-label="主导航">{navigation.map(item => <button key={item.id} className={`nav-item ${view === item.id ? 'active' : ''}`} data-view={item.id} aria-current={view === item.id ? 'page' : undefined} onClick={() => navigate(item.id)}><Icon name={item.icon} />{item.title}<span className="nav-dot" /></button>)}</nav>
-        <div className="sidebar-divider" /><p className="sidebar-label">给自己的小提醒</p>
-        <div className="sidebar-note"><span className="note-spark">✧</span><p>不用一下子变好，<br />今天的一小步<br />也很重要。</p><div className="note-hills"><span /><i /><b>✿</b></div></div>
+        <SidebarReminder />
         <div className="sidebar-bottom"><button className="support-link" onClick={() => setScreen('help')}><Icon name="lifebuoy" />我需要一些帮助 <span>↗</span></button><div className="profile"><div className="avatar">Y</div><div>我的小岛<small>今天也在慢慢成长</small></div><span className="profile-spark">✧</span></div></div>
       </aside>
       <main>

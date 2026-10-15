@@ -1,4 +1,4 @@
-# 心屿 MentalLab
+# 心晴
 
 面向青少年的心理健康技能练习平台，采用 Next.js App Router、React、TypeScript 和 Tailwind CSS，电脑与手机共享一套响应式网页。
 
@@ -29,6 +29,22 @@ npm start
 ```
 
 默认端口为 3000，可使用 `npm start -- --port 3100` 指定端口。正式托管应配置 HTTPS；当前前端与健康检查可以直接运行，不需要 API 密钥或数据库配置。
+
+## 配置侧栏小提醒
+
+提醒文案与轮换间隔保存在 `public/config/reminders.json`，浏览器在打开页面时独立读取，不打包进界面代码。默认每 30 秒按数组顺序轮换，最后一条之后回到第一条。
+
+```json
+{
+  "intervalSeconds": 30,
+  "messages": [
+    "不用一下子变好，\n今天的一小步\n也很重要。",
+    "累的时候，\n可以停一停，\n照顾一下自己。"
+  ]
+}
+```
+
+`intervalSeconds` 为 5–3600 的整数（秒）；`messages` 为非空文字列表，单条最多 120 字符，用 `\n` 换行。只有一条时持续显示。配置不可用或没有有效文案时隐藏提醒区域。修改文件后刷新页面即可生效，无需修改 TypeScript 或重新构建；部署时需同步更新该静态文件。文件通过公开 URL `/config/reminders.json` 提供，请只放展示文案。
 
 ## 配置 AI
 
