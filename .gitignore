@@ -3,6 +3,7 @@ node_modules/
 项目计划_render/
 .demo-qa/
 .next/
+.next-e2e/
 out/
 coverage/
 playwright-report/

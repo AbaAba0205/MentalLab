@@ -122,6 +122,35 @@ export function createApplication(store: Store, options: { origins?: string[]; s
       if (method === 'PUT') { const data = await body(request); requireValue(validHistory(data.messages), 400, '聊天记录格式不正确或超过 200 条'); store.saveHistory(user.id, 'chat', data.messages); return json({ ok: true }); }
       if (method === 'DELETE') { store.saveHistory(user.id, 'chat', []); return json({ ok: true }); }
     }
+    if (path === '/api/chat/conversations') {
+      if (method === 'GET') return json({ conversation: store.currentConversation(user.id), conversations: store.conversations(user.id) });
+      if (method === 'POST') {
+        const conversation = store.createConversation(user.id);
+        store.selectConversation(user.id, conversation.id);
+        return json({ conversation, conversations: store.conversations(user.id) }, 201);
+      }
+    }
+    const conversationMatch = path.match(/^\/api\/chat\/conversations\/([^/]+)(\/select)?$/);
+    if (conversationMatch) {
+      const id = decodeURIComponent(conversationMatch[1]), conversation = store.conversation(user.id, id);
+      requireValue(conversation, 404, '会话不存在或已被删除');
+      if (conversationMatch[2]) {
+        if (method === 'POST') return json({ conversation: store.selectConversation(user.id, id), conversations: store.conversations(user.id) });
+      } else {
+        if (method === 'GET') return json({ conversation });
+        if (method === 'PUT') {
+          const data = await body(request);
+          requireValue(validHistory(data.messages), 400, '聊天记录格式不正确或超过 200 条');
+          const saved = store.saveConversation(user.id, id, data.messages)!;
+          const { messages: _messages, ...summary } = saved;
+          return json({ conversation: summary });
+        }
+        if (method === 'DELETE') {
+          store.db.prepare('DELETE FROM conversations WHERE userId=? AND id=?').run(user.id, id);
+          return json({ conversation: store.currentConversation(user.id), conversations: store.conversations(user.id) });
+        }
+      }
+    }
     if (['/api/chat/turn', '/api/scenario/turn'].includes(path) && method === 'POST') {
       const data = await body(request);
       const urgent = path.includes('/chat/') && chatNeedsSupport(parseChatRequest(data) || []);
@@ -140,7 +169,7 @@ export function createApplication(store: Store, options: { origins?: string[]; s
       if (path === '/api/admin/overview' && method === 'GET') {
         return json({ users: store.db.prepare('SELECT id,email,name,role,disabled,onboarded,createdAt FROM users ORDER BY createdAt DESC LIMIT 500').all(),
           records: store.db.prepare('SELECT r.id,r.userId,u.email,r.data FROM records r JOIN users u ON u.id=r.userId ORDER BY json_extract(r.data,\'$.date\') DESC LIMIT 500').all().map(row => ({ ...row, data: JSON.parse(row.data as string) })),
-          histories: store.db.prepare('SELECT h.*,u.email FROM histories h JOIN users u ON u.id=h.userId ORDER BY updatedAt DESC LIMIT 200').all().map(row => ({ ...row, data: JSON.parse(row.data as string) })),
+          histories: store.db.prepare("SELECT h.userId,h.channel,h.data,h.updatedAt,u.email,NULL AS conversationId,NULL AS title FROM histories h JOIN users u ON u.id=h.userId UNION ALL SELECT c.userId,'chat',c.data,c.updatedAt,u.email,c.id,c.title FROM conversations c JOIN users u ON u.id=c.userId ORDER BY updatedAt DESC LIMIT 200").all().map(row => ({ ...row, data: JSON.parse(row.data as string) })),
           reminders: store.reminder(), audit: store.db.prepare('SELECT * FROM audit ORDER BY date DESC LIMIT 100').all() });
       }
       if (path === '/api/admin/reminders' && method === 'PUT') {
@@ -169,7 +198,10 @@ export function createApplication(store: Store, options: { origins?: string[]; s
       if (path === '/api/admin/history' && method === 'DELETE') {
         const owner = url.searchParams.get('userId'), channel = url.searchParams.get('channel');
         requireValue(owner && ['chat', 'scenario'].includes(channel || ''), 400, '缺少聊天标识');
-        store.saveHistory(owner, channel!, []); store.audit(user.id, 'history.clear', `${owner}/${channel}`); return json({ ok: true });
+        const conversationId = url.searchParams.get('conversationId');
+        if (channel === 'chat' && conversationId) requireValue(store.saveConversation(owner, conversationId, []), 404, '会话不存在');
+        else store.saveHistory(owner, channel!, []);
+        store.audit(user.id, 'history.clear', `${owner}/${conversationId || channel}`); return json({ ok: true });
       }
     }
     return json({ error: '接口不存在' }, 404);

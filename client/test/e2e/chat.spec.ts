@@ -14,6 +14,7 @@ test.beforeEach(async ({ page }, testInfo) => {
   await createAccount(page);
   await page.goto('/');
   await click(page, '我明白，进入心晴 ↗');
+  await expect(page.locator('#dialog')).toHaveCount(0);
 });
 
 test('companion is the default home and courses have an honest reserved entry', async ({ page }, testInfo) => {

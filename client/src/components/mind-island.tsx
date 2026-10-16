@@ -4,7 +4,7 @@ import Image from 'next/image';
 import { useEffect, useState, type CSSProperties } from 'react';
 import { exercises, moods, newRecord, readRecords, recommendation, needsSupport, storageKey, type Exercise, type ExerciseId, type PracticeRecord } from '@/lib/model';
 import { api, type Account } from '@/lib/api';
-import type { ChatEntry } from './companion-chat';
+import { useConversations, ConversationList, MobileConversationControls, ConversationDialogs, type ConversationSnapshot } from './chat-conversations';
 import { exerciseCategories } from '@/lib/training/registry';
 import { TrainingSession } from './training-session';
 import { CompanionChat } from './companion-chat';
@@ -26,17 +26,17 @@ const navigation: { id: View; title: string; icon: string }[] = [
   { id: 'records', title: '我的记录', icon: 'book' },
 ];
 export default function MindIsland({ user, onLogout }: { user: Account; onLogout: () => Promise<void> }) {
-  const [snapshot, setSnapshot] = useState<{ records: PracticeRecord[]; messages: ChatEntry[] } | null>(null);
+  const [snapshot, setSnapshot] = useState<{ records: PracticeRecord[]; chat: ConversationSnapshot } | null>(null);
   const [error, setError] = useState('');
   useEffect(() => {
     let active = true;
-    Promise.all([api<{ records: PracticeRecord[] }>('/api/records'), api<{ messages: ChatEntry[] }>('/api/chat/history')])
-      .then(([records, chat]) => { if (active) setSnapshot({ records: records.records, messages: chat.messages }); })
+    Promise.all([api<{ records: PracticeRecord[] }>('/api/records'), api<ConversationSnapshot>('/api/chat/conversations')])
+      .then(([records, chat]) => { if (active) setSnapshot({ records: records.records, chat }); })
       .catch(() => { if (active) setError('暂时无法读取服务器数据，请重新登录或重试。'); });
     return () => { active = false; };
   }, []);
   if (!snapshot) return <main className="account-page"><div role="status">{error || '正在打开你的小岛…'}{error && <button className="primary" onClick={() => location.reload()}>重新连接</button>}</div></main>;
-  return <Workspace user={user} onLogout={onLogout} initialRecords={snapshot.records} initialMessages={snapshot.messages} />;
+  return <Workspace user={user} onLogout={onLogout} initialRecords={snapshot.records} initialChat={snapshot.chat} />;
 }
 
 function ScenarioCard({ onStart }: { onStart: () => void }) {
@@ -65,7 +65,8 @@ function Recent({ record, onDelete }: { record: PracticeRecord; onDelete?: (id: 
   </div>;
 }
 
-function Workspace({ user, onLogout, initialRecords, initialMessages }: { user: Account; onLogout: () => Promise<void>; initialRecords: PracticeRecord[]; initialMessages: ChatEntry[] }) {
+function Workspace({ user, onLogout, initialRecords, initialChat }: { user: Account; onLogout: () => Promise<void>; initialRecords: PracticeRecord[]; initialChat: ConversationSnapshot }) {
+  const chat = useConversations(initialChat);
   const [records, setRecords] = useState(initialRecords);
   const [showOnboarding, setShowOnboarding] = useState(!user.onboarded);
   const [saving, setSaving] = useState(false);
@@ -165,6 +166,7 @@ function Workspace({ user, onLogout, initialRecords, initialMessages }: { user: 
         <a className="brand" href="#chat" aria-label="心晴首页" onClick={e => { e.preventDefault(); navigate('chat'); }}><span className="brand-symbol">♥</span><span>心晴<small>XINQING</small></span></a>
         <div className="workspace-label">你的情绪小空间</div>
         <nav aria-label="主导航">{navigation.map(item => <button key={item.id} className={`nav-item ${view === item.id ? 'active' : ''}`} data-view={item.id} aria-current={view === item.id ? 'page' : undefined} onClick={() => navigate(item.id)}><Icon name={item.icon} />{item.title}<span className="nav-dot" /></button>)}</nav>
+        <div className="conversation-desktop" hidden={view !== 'chat'}><ConversationList chat={chat} /></div>
         <SidebarReminder />
         <div className="sidebar-bottom"><button className="support-link" onClick={() => setScreen('help')}><Icon name="lifebuoy" />我需要一些帮助 <span>↗</span></button><div className="profile"><div className="avatar">{user.name.slice(0, 1)}</div><div>{user.name}<small>今天也在慢慢成长</small></div><span className="profile-spark">✧</span></div></div>
       </aside>
@@ -172,7 +174,8 @@ function Workspace({ user, onLogout, initialRecords, initialMessages }: { user: 
         <header className="topbar"><div><span className="breadcrumb">我的小岛</span><span className="slash">/</span><span id="page-crumb">{navigation.find(n => n.id === view)?.title}</span></div><div className="topbar-right"><span className={`demo-badge ${aiStatus}`}><i />{aiStatus === 'configured' ? 'AI 已配置' : aiStatus === 'checking' ? '正在检查 AI' : '预设模式'}</span><button className="icon-button" aria-label="寻求帮助" title="寻求帮助" onClick={() => setScreen('help')}><Icon name="lifebuoy" /></button><button className="icon-button" aria-label="账户数据说明" onClick={() => setScreen('privacy')}><Icon name="shield" /></button><button className="text-button logout-button" onClick={() => { void onLogout().catch(() => setMessage('暂时无法退出，请重试')); }}>退出登录</button></div></header>
         <div id="page" className="page">
           <div className="eyebrow">{headings[0]}</div><div className="welcome"><div><h1>{headings[1]}<span aria-hidden="true">✧</span></h1><p>{headings[2]}</p></div>{view === 'today' && <div className="date-pill"><Icon name="calendar" />{now.toLocaleDateString('zh-CN', { month: 'long', day: 'numeric', weekday: 'long' })}</div>}</div>
-          <div className="chat-view" hidden={view !== 'chat'}><CompanionChat active={view === 'chat'} model={aiModel} initialMessages={initialMessages} onHandoff={() => setScreen('help')} onSave={saveRecord} /></div>
+          {view === 'chat' && <MobileConversationControls chat={chat} />}
+          <div className="chat-view" hidden={view !== 'chat'} aria-busy={chat.busy}><CompanionChat key={chat.current.id} active={view === 'chat'} switching={chat.busy} model={aiModel} conversationId={chat.current.id} initialMessages={chat.current.messages} initialDraft={chat.draft} onDraftChange={chat.updateDraft} onBusyChange={chat.setChatBusy} onHistorySaved={chat.saved} onHandoff={() => setScreen('help')} onSave={saveRecord} /></div>
           {view === 'courses' && <Courses onPractice={() => navigate('exercises')} />}
           {view === 'today' && <>
             <div className="hero-grid"><section className="hero"><div className="hero-copy"><span className="hero-label">TAKE A BREATH</span><h2>不用急着找到答案，<br />先照顾此刻的自己。</h2><p>从一次情绪签到开始，<br />找到今天适合你的那一小步。</p><button className="primary" onClick={() => checkin()}>开始情绪签到 <span>↗</span></button></div><Image className="hero-art" src="/island-garden.svg" alt="" width={310} height={265} priority /></section>
@@ -202,6 +205,7 @@ function Workspace({ user, onLogout, initialRecords, initialMessages }: { user: 
       </main>
     </div>
 
+    <ConversationDialogs chat={chat} />
     {showOnboarding && <Onboarding onAccept={acceptOnboarding} />}
     {screen === 'scenario' && <ScenarioPractice onClose={close} onComplete={completeScenario} onHandoff={() => setScreen('help')} />}
 

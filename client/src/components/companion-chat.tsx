@@ -7,19 +7,24 @@ import type { PracticeRecord } from '@/lib/model';
 import { TrainingSession } from './training-session';
 import { Icon } from './icon';
 import { api } from '@/lib/api';
+import type { ConversationSummary } from './chat-conversations';
 
 export type ChatEntry = ChatMessage & { result?: ChatReply; trainingState?: 'skipped' | 'saved' };
 type Entry = ChatEntry;
 
-export function CompanionChat({ active, model, initialMessages, onHandoff, onSave }: {
+export function CompanionChat({ active, switching, model, conversationId, initialMessages, initialDraft, onDraftChange, onBusyChange, onHistorySaved, onHandoff, onSave }: {
   active: boolean; model: string; initialMessages: Entry[]; onHandoff: () => void; onSave: (record: PracticeRecord) => Promise<boolean>;
+  conversationId: string; initialDraft: string; onDraftChange: (value: string) => void;
+  switching: boolean;
+  onBusyChange: (value: boolean) => void; onHistorySaved: (conversation: ConversationSummary) => void;
 }) {
   const [messages, setMessages] = useState<Entry[]>(initialMessages);
   const previousHistory = useRef(messages);
   const historyQueue = useRef<Promise<void>>(Promise.resolve());
+  const pendingSaves = useRef(0);
   const [historyError, setHistoryError] = useState('');
   const [historySaving, setHistorySaving] = useState(false);
-  const [input, setInput] = useState('');
+  const [input, setInput] = useState(initialDraft);
   const [loading, setLoading] = useState(false);
   const [pending, setPending] = useState('');
   const [animation, setAnimation] = useState<{ index: number; text: string } | null>(null);
@@ -35,16 +40,20 @@ export function CompanionChat({ active, model, initialMessages, onHandoff, onSav
   const textarea = useRef<HTMLTextAreaElement>(null);
   const followLatest = useRef(true);
   const responding = loading || animation !== null;
+  const historyPath = `/api/chat/conversations/${encodeURIComponent(conversationId)}`;
+  useEffect(() => { onDraftChange(input); }, [input, onDraftChange]);
+  useEffect(() => { onBusyChange(responding || historySaving || Boolean(historyError) || trainingIndex !== null || confirmClear); }, [responding, historySaving, historyError, trainingIndex, confirmClear, onBusyChange]);
   useEffect(() => {
     if (previousHistory.current === messages) return;
     previousHistory.current = messages;
     setHistorySaving(true);
+    pendingSaves.current++;
     historyQueue.current = historyQueue.current.then(async () => {
-      try { await api('/api/chat/history', 'PUT', { messages: messages.slice(-200) }); setHistoryError(''); }
+      try { const data = await api<{ conversation: ConversationSummary }>(historyPath, 'PUT', { messages: messages.slice(-200) }); onHistorySaved(data.conversation); setHistoryError(''); }
       catch { setHistoryError('对话暂未保存到服务器，请重试保存。'); }
-      finally { setHistorySaving(false); }
+      finally { pendingSaves.current--; if (!pendingSaves.current) setHistorySaving(false); }
     });
-  }, [messages]);
+  }, [messages, historyPath, onHistorySaved]);
   useEffect(() => () => controller.current?.abort(), []);
   useEffect(() => {
     if (active && followLatest.current && log.current) log.current.scrollTop = log.current.scrollHeight;
@@ -84,7 +93,7 @@ export function CompanionChat({ active, model, initialMessages, onHandoff, onSav
   }
   async function send() {
     const content = input.trim();
-    if (!content || busy.current || animation || handoff) return;
+    if (!content || busy.current || animation || handoff || switching) return;
     followLatest.current = true;
     setInput('');
     const context = [...messages.map(({ role, content }) => ({ role, content })), { role: 'user' as const, content }];
@@ -120,9 +129,10 @@ export function CompanionChat({ active, model, initialMessages, onHandoff, onSav
     // This local support entry is never submitted: ordinary chat is now paused.
     setMessages(previous => [...previous, { role: 'assistant', content: result.reply, result }]);
   }
+  const saveError = historyError && <div role="alert" className="form-error">{historyError}<button className="text-button" onClick={() => setMessages(previous => [...previous])}>重试保存对话</button></div>;
   return <section className="companion" aria-label="随心聊">
     <div className="companion-top"><div className="companion-identity"><span className="companion-avatar"><Icon name="leaf" /></span><div><strong>心晴陪伴导师</strong><span>AI 陪伴 · {model} · 按你的节奏来</span></div></div>
-      <button className="text-button" disabled={responding || !messages.length} onClick={() => setConfirmClear(true)}>清空对话</button></div>
+      <button className="text-button" disabled={switching || responding || !messages.length} onClick={() => setConfirmClear(true)}>清空对话</button></div>
     <div className="chat-log" ref={log} role="log" aria-label="聊天记录" aria-live="polite" aria-relevant="additions text" tabIndex={0} onScroll={event => {
       const element = event.currentTarget;
       followLatest.current = element.scrollHeight - element.scrollTop - element.clientHeight < 48;
@@ -144,7 +154,7 @@ export function CompanionChat({ active, model, initialMessages, onHandoff, onSav
                 if (saved) { setMessages(previous => previous.map((entry, i) => i === index ? { ...entry, trainingState: 'saved' } : entry)); setTrainingIndex(null); }
                 return saved;
               }} />
-              : <div className="chat-card-actions"><button className="primary" disabled={responding || trainingIndex !== null} onClick={() => setTrainingIndex(index)}>开始小训练</button><button className="secondary" disabled={responding || trainingIndex !== null} onClick={() => skip(index)}>暂时不练，继续聊</button></div>}
+              : <div className="chat-card-actions"><button className="primary" disabled={switching || responding || trainingIndex !== null} onClick={() => setTrainingIndex(index)}>开始小训练</button><button className="secondary" disabled={switching || responding || trainingIndex !== null} onClick={() => skip(index)}>暂时不练，继续聊</button></div>}
           </div>}
         </div>;
       })}
@@ -152,21 +162,23 @@ export function CompanionChat({ active, model, initialMessages, onHandoff, onSav
       {loading && <p className="chat-loading" role="status">正在认真读你说的话…</p>}
     </div>
     {handoff && <div className="chat-support" role="status"><strong>先照顾现实中的安全</strong><p>这段普通聊天和训练已暂停。若有紧急危险，中国大陆可联系 110 或 120；其他地区请联系当地紧急服务。可以找安全、可信任的人陪着你。</p><button className="primary" onClick={onHandoff}>查看现实支持</button></div>}
-    {!messages.length && !loading && <div className="chat-starters" aria-label="聊天话题">{['今天有点累，想聊聊', '想到考试，我有些紧张', '我想试一个小练习'].map(text => <button key={text} onClick={() => { setInput(text); textarea.current?.focus(); }}>{text}</button>)}</div>}
+    {!messages.length && !loading && <div className="chat-starters" aria-label="聊天话题">{['今天有点累，想聊聊', '想到考试，我有些紧张', '我想试一个小练习'].map(text => <button key={text} disabled={switching} onClick={() => { setInput(text); textarea.current?.focus(); }}>{text}</button>)}</div>}
     <form className="chat-composer" hidden={handoff || confirmClear} onSubmit={event => { event.preventDefault(); void send(); }}>
-      <label htmlFor="chat-input">想说什么，都可以慢慢来</label><textarea ref={textarea} id="chat-input" maxLength={1000} disabled={handoff} value={input} onChange={event => setInput(event.target.value)} placeholder={handoff ? '先联系现实中的支持，让安全、可信任的人陪着你。' : '从今天的一件小事开始…'} onKeyDown={event => {
+      <label htmlFor="chat-input">想说什么，都可以慢慢来</label><textarea ref={textarea} id="chat-input" maxLength={1000} disabled={handoff || switching} value={input} onChange={event => setInput(event.target.value)} placeholder={handoff ? '先联系现实中的支持，让安全、可信任的人陪着你。' : '从今天的一件小事开始…'} onKeyDown={event => {
         if ((event.ctrlKey || event.metaKey) && event.key === 'Enter' && !event.nativeEvent.isComposing) { event.preventDefault(); void send(); }
       }} />
       <div className="composer-footer"><span>{input.length} / 1000 · Ctrl / ⌘ + Enter 发送</span>{responding
         ? <button type="button" className="primary" onClick={event => { event.preventDefault(); cancelPending(); textarea.current?.focus(); }}>终止回复 ■</button>
-        : <button type="submit" className="primary" disabled={!input.trim() || handoff}>{error ? '重试发送' : '发送消息 ↗'}</button>}</div>
+        : <button type="submit" className="primary" disabled={!input.trim() || handoff || switching}>{error ? '重试发送' : '发送消息 ↗'}</button>}</div>
       {error && <p className="form-error" role="alert">{error}</p>}
+      {saveError}
     </form>
-    <p className="chat-privacy">对话保存在你的账户，最多保留最近 200 条消息。发送时会将文字及最多最近 10 轮对话交给模型服务。AI 可能理解不准确，不提供诊断或治疗。</p>
+    <p className="chat-privacy">每个会话独立保存在账户中，最多保留最近 200 条消息。发送时仅将当前会话的文字及最多最近 10 轮对话交给模型服务。AI 可能理解不准确，不提供诊断或治疗。</p>
     {historySaving && <p className="chat-save-status" role="status">正在保存对话…</p>}
-    {historyError && <div role="alert" className="form-error">{historyError}<button className="text-button" onClick={() => setMessages(previous => [...previous])}>重试保存对话</button></div>}
+    {switching && <p className="chat-save-status" role="status">正在打开会话…</p>}
+    {(handoff || confirmClear) && saveError}
     {confirmClear && <div className="chat-clear" role="group" aria-label="确认清空对话"><p>清空账户中的当前对话并重新开始？练习记录会保留在“我的记录”中。清空并不代表安全问题已解决。</p><button className="secondary" onClick={() => setConfirmClear(false)}>保留对话</button><button className="primary" onClick={async () => {
-      try { await historyQueue.current; await api('/api/chat/history', 'DELETE'); cancelPending(); setMessages([]); setInput(''); setError(''); setHandoff(false); setTrainingIndex(null); setConfirmClear(false); }
+      try { await historyQueue.current; const data = await api<{ conversation: ConversationSummary }>(historyPath, 'PUT', { messages: [] }); onHistorySaved(data.conversation); cancelPending(); setMessages([]); setInput(''); setError(''); setHandoff(false); setTrainingIndex(null); setConfirmClear(false); }
       catch { setHistoryError('服务器未能清空对话，请重试。'); }
     }}>确认清空对话</button></div>}
   </section>;

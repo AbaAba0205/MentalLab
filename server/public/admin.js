@@ -37,9 +37,9 @@ function render() {
   }));
   byId('history-list').replaceChildren(...snapshot.histories.filter(matches).map(history => {
     const item = node('article'), detail = node('details');
-    detail.append(node('summary', `${history.email} · ${history.channel === 'chat' ? '随心聊' : '情境练习'} · ${history.data.length} 条消息`));
+    detail.append(node('summary', `${history.email} · ${history.channel === 'chat' ? `随心聊 · ${history.title || '新会话'}` : '情境练习'} · ${history.data.length} 条消息`));
     for (const message of history.data) detail.append(node('p', `${message.role === 'user' ? '用户' : '助手'}：${message.content}`));
-    item.append(detail, button('清空对话', () => mutate(`/api/admin/history?userId=${encodeURIComponent(history.userId)}&channel=${history.channel}`, 'DELETE', null, '确认清空该用户的这组对话？'), true)); return item;
+    item.append(detail, button('清空对话', () => mutate(`/api/admin/history?userId=${encodeURIComponent(history.userId)}&channel=${history.channel}${history.conversationId ? `&conversationId=${encodeURIComponent(history.conversationId)}` : ''}`, 'DELETE', null, '确认清空该用户的这组对话？'), true)); return item;
   }));
   byId('audit-list').replaceChildren(...snapshot.audit.map(entry => node('p', `${entry.date} · ${entry.action} · ${entry.target} · 操作者 ${entry.actorId}`)));
 }

@@ -14,16 +14,16 @@ export default defineConfig({
   },
   webServer: [{
     command: 'node ../scripts/e2e-server.mjs',
-    url: 'http://127.0.0.1:4000/api/health',
+    url: 'http://127.0.0.1:4100/api/health',
     reuseExistingServer: false,
     timeout: 60_000,
   }, {
-    command: 'npm run start -- --port 3100',
+    command: 'npm run build && npm run start -- --port 3100',
     // Test fixtures must not spend tokens or submit synthetic prompts to a real provider.
-    env: { SERVER_URL: 'http://127.0.0.1:4000' },
+    env: { SERVER_URL: 'http://127.0.0.1:4100', NEXT_DIST_DIR: '.next-e2e' },
     url: 'http://127.0.0.1:3100/api/health',
     reuseExistingServer: false,
-    timeout: 60_000,
+    timeout: 120_000,
   }],
   projects: [
     { name: 'desktop', use: { viewport: { width: 1440, height: 1050 } } },

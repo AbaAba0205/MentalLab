@@ -65,7 +65,7 @@ test('administrator page manages users, records and reminders with permission ch
   expect((await page.request.get('/api/admin/overview')).status()).toBe(403);
   const record = { id: randomUUID(), date: new Date().toISOString(), kind: 'checkin', title: '后台管理测试', note: '<img src=x onerror=alert(1)>', before: 3, after: null, mood: '', helpful: '', demo: false };
   expect((await page.request.post('/api/records', { data: { record } })).status()).toBe(201);
-  const context = await browser.newContext({ baseURL: 'http://127.0.0.1:4000' });
+  const context = await browser.newContext({ baseURL: 'http://127.0.0.1:4100' });
   try {
     const admin = await context.newPage(); await admin.goto('/admin');
     await admin.getByLabel('邮箱', { exact: true }).fill('admin@e2e.test');
