@@ -1,0 +1,17 @@
+{
+  "name": "@xinqing/server",
+  "version": "0.4.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=24.0.0" },
+  "scripts": {
+    "dev": "node --env-file-if-exists=.env.local --import tsx --watch src/index.ts",
+    "start": "node --env-file-if-exists=.env.local dist/index.js",
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "lint": "node --check public/admin.js",
+    "test": "tsx --test test/*.test.ts",
+    "admin:create": "node --env-file-if-exists=.env.local --import tsx src/create-admin.ts"
+  },
+  "devDependencies": { "@types/node": "26.6.5", "tsx": "4.23.15", "typescript": "6.0.3" }
+}

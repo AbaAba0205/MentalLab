@@ -1,36 +1,19 @@
 {
-  "name": "xinqing",
-  "version": "0.3.1",
+  "name": "xinqing-projects",
+  "version": "0.4.0",
   "private": true,
   "type": "module",
-  "engines": {
-    "node": ">=22.0.0"
-  },
+  "workspaces": ["client", "server"],
+  "engines": { "node": ">=24.0.0" },
   "scripts": {
-    "dev": "next dev --hostname 0.0.0.0",
-    "build": "next build",
-    "start": "next start --hostname 0.0.0.0",
-    "typecheck": "next typegen && tsc --noEmit",
-    "lint": "eslint .",
-    "test": "tsx --test test/*.test.ts",
-    "test:e2e": "playwright test",
-    "check": "npm run lint && npm run typecheck && npm test && npm run build"
-  },
-  "dependencies": {
-    "next": "16.4.0",
-    "react": "19.3.0",
-    "react-dom": "19.3.0"
-  },
-  "devDependencies": {
-    "@playwright/test": "1.64.0",
-    "@tailwindcss/postcss": "4.3.3",
-    "@types/node": "26.6.5",
-    "@types/react": "19.3.0",
-    "@types/react-dom": "19.3.0",
-    "eslint": "9.39.4",
-    "eslint-config-next": "16.4.0",
-    "tailwindcss": "4.3.3",
-    "tsx": "4.23.15",
-    "typescript": "6.0.3"
+    "dev": "node scripts/dev.mjs",
+    "dev:client": "npm run dev --workspace client",
+    "dev:server": "npm run dev --workspace server",
+    "build": "npm run build --workspaces",
+    "test": "npm test --workspaces",
+    "lint": "npm run lint --workspaces",
+    "typecheck": "npm run typecheck --workspaces",
+    "check": "npm run lint && npm run typecheck && npm test && npm run build",
+    "test:e2e": "npm run test:e2e --workspace client"
   }
 }

@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>心晴 · 管理后台</title><link rel="stylesheet" href="/admin.css"><script src="/admin.js" defer></script></head>
+<body><main><header><div><p class="eyebrow">XINQING · ADMINISTRATION</p><h1>心晴管理后台</h1><p>用户、练习记录、对话与提醒配置</p></div><button id="logout" hidden>退出登录</button></header>
+<p id="status" role="status" aria-live="polite"></p>
+<section id="login"><h2>管理员登录</h2><p>请使用服务器命令创建的管理员账户。</p><form id="login-form"><label>邮箱<input name="email" type="email" required autocomplete="username"></label><label>密码<input name="password" type="password" minlength="10" maxlength="128" required autocomplete="current-password"></label><button>登录管理后台</button></form></section>
+<div id="dashboard" hidden><nav aria-label="管理导航"><a href="#users">用户</a><a href="#records">练习记录</a><a href="#histories">对话</a><a href="#reminders">提醒配置</a><a href="#audit">操作日志</a><button id="refresh">刷新数据</button></nav>
+<label>筛选用户或内容<input id="search" type="search" placeholder="邮箱、昵称或记录内容"></label><p id="counts"></p>
+<section id="users"><h2>用户管理</h2><div class="table-wrap"><table><thead><tr><th>用户</th><th>邮箱</th><th>角色 / 状态</th><th>注册时间</th><th>操作</th></tr></thead><tbody id="user-rows"></tbody></table></div></section>
+<section id="records"><h2>练习记录</h2><div id="record-list"></div></section>
+<section id="histories"><h2>对话管理</h2><div id="history-list"></div></section>
+<section id="reminders"><h2>侧栏小提醒</h2><form id="reminder-form"><label>轮换间隔（秒）<input name="interval" type="number" min="5" max="3600" required></label><label>提醒内容（每段一条，用空行分隔；最多 50 条，每条最多 120 字）<textarea name="messages" rows="10" required></textarea></label><button>保存提醒配置</button></form></section>
+<section id="audit"><h2>最近的管理操作</h2><p>用户、记录和对话删除后无法在页面恢复。数据库备份由部署人员维护。</p><div id="audit-list"></div></section>
+</div></main></body></html>
