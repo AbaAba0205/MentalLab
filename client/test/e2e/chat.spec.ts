@@ -177,7 +177,11 @@ test('a failed request keeps a newer draft and the original pending message', as
 });
 
 test('preset chat is labeled, persists on the server and survives refresh', async ({ page }) => {
+  const responsePromise = page.waitForResponse(response => response.url().endsWith('/api/chat/turn') && response.request().method() === 'POST');
   await send(page, '今天有点累，想聊聊');
+  const response = await responsePromise;
+  expect(response.status()).toBe(200);
+  expect(response.headers()['x-request-id']).toMatch(/^[a-f0-9-]{36}$/);
   await expect(page.locator('.chat-source')).toHaveText('预设回应 · AI 暂时不可用');
   await navigate(page, 'today');
   await navigate(page, 'chat');

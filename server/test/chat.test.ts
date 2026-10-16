@@ -140,6 +140,7 @@ test('chat route validates origin, body, rate limits and still provides urgent s
   assert.equal((await POST(request(user('你好')))).status, 429);
   const safety = await POST(request(user('我手里有刀')));
   assert.equal(safety.status, 200); assert.deepEqual(await safety.json(), supportReply());
+  assert.match(safety.headers.get('x-request-id') || '', /^[0-9a-f-]{36}$/);
 });
 
 

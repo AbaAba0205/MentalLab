@@ -7,6 +7,7 @@ import { isChatReply, chatNeedsSupport, parseChatRequest, type ChatMessage } fro
 import { POST as chatTurn } from './routes/chat.js';
 import { POST as scenarioTurn } from './routes/scenario.js';
 import { GET as health } from './routes/health.js';
+import { aiDiagnosticContext, diagnosticDuration, type AIDiagnosticContext, type AIDiagnosticLogger, type AIDiagnosticReason } from './server/ai-diagnostics.js';
 
 class HTTPError extends Error { constructor(public status: number, message: string) { super(message); } }
 const json = (data: unknown, status = 200, headers: HeadersInit = {}) => Response.json(data, { status, headers: { 'Cache-Control': 'no-store', ...headers } });
@@ -46,12 +47,12 @@ function validRecord(value: unknown) {
   return record;
 }
 
-export function createApplication(store: Store, options: { origins?: string[]; secure?: boolean } = {}) {
+export function createApplication(store: Store, options: { origins?: string[]; secure?: boolean; aiLogger?: AIDiagnosticLogger } = {}) {
   const origins = options.origins || (process.env.CLIENT_ORIGINS || 'http://localhost:3000,http://127.0.0.1:3000').split(',').map(v => v.trim());
   const secure = options.secure ?? process.env.COOKIE_SECURE === 'true';
   // Equal-cost hash work for unknown accounts, to avoid a fast email-existence oracle.
   const dummyHash = hashPassword(randomUUID());
-  async function dispatch(request: Request, peer: string) {
+  async function dispatch(request: Request, peer: string, diagnostics?: AIDiagnosticContext) {
     const url = new URL(request.url), path = url.pathname, method = request.method;
     if (!['GET', 'HEAD'].includes(method)) {
       const origin = request.headers.get('origin');
@@ -157,7 +158,7 @@ export function createApplication(store: Store, options: { origins?: string[]; s
       requireValue(urgent || store.allow(`ai:${user.id}`, 12), 429, '请求过于频繁，请稍后再试');
       // The outer boundary validates the actual Origin; internal handlers receive a trusted request.
       const inner = new Request(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-forwarded-for': user.id }, body: JSON.stringify(data) });
-      const response = await (path.includes('/chat/') ? chatTurn(inner) : scenarioTurn(inner));
+      const response = await (path.includes('/chat/') ? chatTurn(inner, diagnostics) : scenarioTurn(inner, diagnostics));
       if (response.ok && path.includes('/scenario/')) {
         const reply = await response.clone().json();
         store.saveHistory(user.id, 'scenario', [...data.messages as unknown[], { role: 'assistant', content: reply.reply, result: reply }]);
@@ -207,11 +208,24 @@ export function createApplication(store: Store, options: { origins?: string[]; s
     return json({ error: '接口不存在' }, 404);
   }
   return async (request: Request, peer = 'local') => {
+    const path = new URL(request.url).pathname;
+    const feature = request.method === 'POST' ? path === '/api/chat/turn' ? 'chat' : path === '/api/scenario/turn' ? 'scenario' : undefined : undefined;
+    const diagnostics = feature ? aiDiagnosticContext(feature, undefined, options.aiLogger) : undefined;
+    const started = performance.now();
+    diagnostics?.log({ event: 'ai_http', requestId: diagnostics.requestId, feature: diagnostics.feature, outcome: 'started', durationMs: 0 });
     let response: Response;
-    try { response = await dispatch(request, peer); }
+    try { response = await dispatch(request, peer, diagnostics); }
     catch (error) {
-      if (!(error instanceof HTTPError)) console.error('Server request failed', error instanceof Error ? error.message : 'unknown');
+      if (!(error instanceof HTTPError) && !diagnostics) console.error('Server request failed', error instanceof Error ? error.message : 'unknown');
       response = json({ error: error instanceof HTTPError ? error.message : '服务器暂时无法完成请求' }, error instanceof HTTPError ? error.status : 500);
+    }
+    if (diagnostics) {
+      response.headers.set('X-Request-Id', diagnostics.requestId);
+      const status = response.status;
+      const reason: AIDiagnosticReason | undefined = response.ok ? undefined : status === 401 ? 'authentication_required'
+        : status === 403 ? 'request_forbidden' : status === 429 ? 'rate_limited' : status >= 500 ? 'internal_error' : 'invalid_request';
+      diagnostics.log({ event: 'ai_http', requestId: diagnostics.requestId, feature: diagnostics.feature,
+        outcome: response.ok ? 'success' : status >= 500 ? 'failure' : 'rejected', reason, responseStatus: status, durationMs: diagnosticDuration(started) });
     }
     response.headers.set('X-Content-Type-Options', 'nosniff');
     response.headers.set('X-Frame-Options', 'DENY');

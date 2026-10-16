@@ -1,6 +1,7 @@
 import { allowedTraining, chatNeedsSupport, fallbackChatReply, supportReply, type ChatMessage, type ChatReply } from '../lib/chat.js';
 import { exercises } from '../lib/training/registry.js';
-import { requestModelText, type ProviderDependencies } from './ai-client.js';
+import { aiConfiguration, classifyAIError, requestModelText, type ProviderDependencies } from './ai-client.js';
+import { diagnosticDuration, type AIDiagnosticContext, type AIDiagnosticReason } from './ai-diagnostics.js';
 
 export const companionPrompt = `你是心晴的 AI 心理陪伴导师，面向 14–18 岁用户，以温和、平等、真诚的方式陪用户聊日常生活、情绪和困扰。你不是医生或治疗师，不声称具有人类身份、感情或线下行动能力。
 语言与关系边界：
@@ -28,22 +29,46 @@ export function acceptableCompanionText(text: string): boolean {
     /\d{5,}/,
   ].some(pattern => pattern.test(text));
 }
-export async function generateChatReply(messages: ChatMessage[], dependencies?: ProviderDependencies): Promise<ChatReply> {
-  if (chatNeedsSupport(messages)) return supportReply();
+export async function generateChatReply(messages: ChatMessage[], dependencies?: ProviderDependencies, diagnostics?: AIDiagnosticContext): Promise<ChatReply> {
+  const requestStarted = performance.now();
+  const model = aiConfiguration(dependencies?.env).model;
+  if (chatNeedsSupport(messages)) {
+    diagnostics?.log({ event: 'ai_request', requestId: diagnostics.requestId, feature: 'chat', outcome: 'handoff', reason: 'local_safety_handoff', durationMs: diagnosticDuration(requestStarted), model });
+    return supportReply();
+  }
   // The configured provider occasionally returns an empty or malformed first response.
   // Retry once, while applying the same validation before either response reaches the UI.
   for (let attempt = 0; attempt < 2; attempt += 1) {
+    const attemptStarted = performance.now();
     try {
       const raw = await requestModelText(companionPrompt, messages, dependencies);
-      const value: unknown = JSON.parse(raw.replace(/^\s*```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim());
-      if (!value || typeof value !== 'object') throw new Error('Invalid reply');
+      let value: unknown;
+      try { value = JSON.parse(raw.replace(/^\s*```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim()); }
+      catch { throw new ChatResponseError('invalid_json'); }
+      if (!value || typeof value !== 'object') throw new ChatResponseError('invalid_schema');
       const result = value as Record<string, unknown>;
-      if (result.needsSupport === true) return supportReply();
-      if (result.needsSupport !== false || typeof result.reply !== 'string' || !result.reply.trim() || result.reply.length > 600 || !acceptableCompanionText(result.reply)) throw new Error('Unsafe or invalid reply');
+      if (result.needsSupport === true) {
+        diagnostics?.log({ event: 'ai_attempt', requestId: diagnostics.requestId, feature: 'chat', outcome: 'handoff', reason: 'model_safety_handoff', attempt: attempt + 1, durationMs: diagnosticDuration(attemptStarted), model });
+        diagnostics?.log({ event: 'ai_request', requestId: diagnostics.requestId, feature: 'chat', outcome: 'handoff', reason: 'model_safety_handoff', durationMs: diagnosticDuration(requestStarted), model });
+        return supportReply();
+      }
+      if (result.needsSupport !== false || typeof result.reply !== 'string' || !result.reply.trim()) throw new ChatResponseError('invalid_schema');
+      if (result.reply.length > 600) throw new ChatResponseError('response_too_long');
+      if (!acceptableCompanionText(result.reply)) throw new ChatResponseError('unsafe_text');
       const exerciseId = allowedTraining(result.exerciseId, messages);
-      if (result.exerciseId !== null && !exerciseId) throw new Error('Ineligible training');
+      if (result.exerciseId !== null && !exerciseId) throw new ChatResponseError('ineligible_exercise');
+      diagnostics?.log({ event: 'ai_attempt', requestId: diagnostics.requestId, feature: 'chat', outcome: 'success', attempt: attempt + 1, durationMs: diagnosticDuration(attemptStarted), model });
+      diagnostics?.log({ event: 'ai_request', requestId: diagnostics.requestId, feature: 'chat', outcome: 'success', durationMs: diagnosticDuration(requestStarted), model });
       return { action: 'reply', source: 'ai', reply: result.reply.trim(), exerciseId };
-    } catch { /* retry, then use the reviewed fallback */ }
+    } catch (error) {
+      const classified = error instanceof ChatResponseError ? { reason: error.reason } : classifyAIError(error);
+      diagnostics?.log({ event: 'ai_attempt', requestId: diagnostics.requestId, feature: 'chat', outcome: 'failure', attempt: attempt + 1, reason: classified.reason, providerStatus: classified.providerStatus, durationMs: diagnosticDuration(attemptStarted), model });
+    }
   }
+  diagnostics?.log({ event: 'ai_request', requestId: diagnostics.requestId, feature: 'chat', outcome: 'fallback', reason: 'fallback', durationMs: diagnosticDuration(requestStarted), model });
   return fallbackChatReply(messages);
+}
+
+class ChatResponseError extends Error {
+  constructor(public reason: AIDiagnosticReason) { super(reason); }
 }

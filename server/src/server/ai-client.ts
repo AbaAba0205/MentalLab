@@ -1,4 +1,5 @@
 import { fallbackScenarioReply, MAX_SCENARIO_TURNS, type ScenarioMessage, type ScenarioTurnResponse } from '../lib/scenario.js';
+import { diagnosticDuration, type AIDiagnosticContext, type AIDiagnosticReason } from './ai-diagnostics.js';
 
 export interface AIEnvironment {
   AI_API_KEY?: string;
@@ -16,6 +17,10 @@ interface ModelReply {
   coachHint: string;
   suggestions: string[];
   feedback?: string;
+}
+
+export class AIProviderError extends Error {
+  constructor(public reason: AIDiagnosticReason, public providerStatus?: number) { super(reason); }
 }
 
 export function aiConfiguration(env: AIEnvironment = process.env as AIEnvironment): { configured: boolean; model: string } {
@@ -49,7 +54,7 @@ function modelText(payload: unknown): string {
 export function parseModelReply(content: string): ModelReply {
   const cleaned = content.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
   const start = cleaned.indexOf('{'), end = cleaned.lastIndexOf('}');
-  if (start < 0 || end <= start) throw new Error('Model did not return JSON');
+  if (start < 0 || end <= start) throw new SyntaxError('Model did not return JSON');
   const parsed: unknown = JSON.parse(cleaned.slice(start, end + 1));
   if (!parsed || typeof parsed !== 'object') throw new Error('Invalid model JSON');
   const value = parsed as Record<string, unknown>;
@@ -78,18 +83,29 @@ const systemPrompt = `你是“心晴”的青少年心理技能情境教练，�
 export async function generateScenarioReply(
   messages: ScenarioMessage[],
   dependencies: ProviderDependencies = { fetch, env: process.env as AIEnvironment },
+  diagnostics?: AIDiagnosticContext,
 ): Promise<ScenarioTurnResponse> {
+  const started = performance.now();
   const config = aiConfiguration(dependencies.env);
-  if (!config.configured) return fallbackScenarioReply(messages, 'AI 尚未配置');
+  if (!config.configured) {
+    diagnostics?.log({ event: 'ai_request', requestId: diagnostics.requestId, feature: 'scenario', outcome: 'fallback', reason: 'provider_not_configured', durationMs: diagnosticDuration(started), model: config.model });
+    return fallbackScenarioReply(messages, 'AI 尚未配置');
+  }
   const turn = messages.filter(message => message.role === 'user').length;
+  const attemptStarted = performance.now();
   try {
     const parsed = parseModelReply(await requestModelText(systemPrompt, messages, dependencies));
+    diagnostics?.log({ event: 'ai_attempt', requestId: diagnostics.requestId, feature: 'scenario', outcome: 'success', attempt: 1, durationMs: diagnosticDuration(attemptStarted), model: config.model });
+    diagnostics?.log({ event: 'ai_request', requestId: diagnostics.requestId, feature: 'scenario', outcome: 'success', durationMs: diagnosticDuration(started), model: config.model });
     return {
       action: turn >= MAX_SCENARIO_TURNS ? 'complete' : 'continue',
       source: 'ai', riskLevel: 'low', ...parsed,
       feedback: turn >= MAX_SCENARIO_TURNS ? parsed.feedback || '你完成了三轮边界表达练习。可以回看哪一句最像你平时会说的话。' : undefined,
     };
-  } catch {
+  } catch (error) {
+    const classified = classifyAIError(error);
+    diagnostics?.log({ event: 'ai_attempt', requestId: diagnostics.requestId, feature: 'scenario', outcome: 'failure', reason: classified.reason, providerStatus: classified.providerStatus, attempt: 1, durationMs: diagnosticDuration(attemptStarted), model: config.model });
+    diagnostics?.log({ event: 'ai_request', requestId: diagnostics.requestId, feature: 'scenario', outcome: 'fallback', reason: classified.reason, providerStatus: classified.providerStatus, durationMs: diagnosticDuration(started), model: config.model });
     return fallbackScenarioReply(messages, 'AI 回复失败');
   }
 }
@@ -100,14 +116,37 @@ export async function requestModelText(
   dependencies: ProviderDependencies = { fetch, env: process.env as AIEnvironment },
 ): Promise<string> {
   const config = aiConfiguration(dependencies.env);
-  if (!config.configured) throw new Error('AI is not configured');
-  const response = await dependencies.fetch(chatCompletionsEndpoint(dependencies.env.AI_BASE_URL!), {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + dependencies.env.AI_API_KEY!.trim() },
-    body: JSON.stringify({ model: config.model, temperature: 0.6, max_tokens: 700,
-      messages: [{ role: 'system', content: prompt }, ...messages] }),
-    signal: AbortSignal.timeout(15_000), cache: 'no-store',
-  });
-  if (!response.ok) throw new Error('Provider unavailable');
-  return modelText(await response.json());
+  if (!config.configured) throw new AIProviderError('provider_not_configured');
+  let endpoint: string;
+  try { endpoint = chatCompletionsEndpoint(dependencies.env.AI_BASE_URL!); new URL(endpoint); }
+  catch { throw new AIProviderError('provider_config'); }
+  let response: Response;
+  try {
+    response = await dependencies.fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + dependencies.env.AI_API_KEY!.trim() },
+      body: JSON.stringify({ model: config.model, temperature: 0.6, max_tokens: 700,
+        messages: [{ role: 'system', content: prompt }, ...messages] }),
+      signal: AbortSignal.timeout(15_000), cache: 'no-store',
+    });
+  } catch (error) {
+    const name = error && typeof error === 'object' && 'name' in error ? String(error.name) : '';
+    throw new AIProviderError(name === 'TimeoutError' || name === 'AbortError' ? 'provider_timeout' : 'provider_network');
+  }
+  if (!response.ok) throw new AIProviderError('provider_http', response.status);
+  let payload: unknown;
+  try { payload = await response.json(); }
+  catch (error) {
+    const name = error && typeof error === 'object' && 'name' in error ? String(error.name) : '';
+    throw new AIProviderError(name === 'TimeoutError' || name === 'AbortError' ? 'provider_timeout'
+      : error instanceof SyntaxError ? 'provider_invalid_response' : 'provider_network', response.status);
+  }
+  try { return modelText(payload); }
+  catch { throw new AIProviderError('provider_invalid_response', response.status); }
+}
+
+export function classifyAIError(error: unknown): { reason: AIDiagnosticReason; providerStatus?: number } {
+  if (error instanceof AIProviderError) return { reason: error.reason, providerStatus: error.providerStatus };
+  if (error instanceof SyntaxError) return { reason: 'invalid_json' };
+  return { reason: 'invalid_schema' };
 }
