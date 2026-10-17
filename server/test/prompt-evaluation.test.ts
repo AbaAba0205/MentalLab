@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtemp, rm, readdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { cases, variants, evaluationBody, evaluationSchedule, evaluateContent, runEvaluationCall, summarize } from '../scripts/evaluate-ai-prompts.js';
+import { cases, variants, evaluationBody, evaluationSchedule, evaluateContent, runEvaluationCall, summarize, type EvaluationResult } from '../scripts/evaluate-ai-prompts.js';
 import { companionPrompt } from '../src/server/chat-agent.js';
 
 test('evaluation changes one experimental factor and keeps production generation parameters', () => {
@@ -66,4 +66,21 @@ test('the live runner preserves exact experimental bodies and counts provider fa
   assert.equal(unsupported.reason, 'provider_http');
   const summary = summarize([response, unsupported]).find(group => group.variant === 'json_mode')!;
   assert.equal(summary.calls, 2); assert.equal(summary.http200WithContent, 1); assert.equal(summary.invalidJson, 1); assert.equal(summary.accepted, 0);
+});
+
+test('report statistics keep failed calls in the denominator and separate syntax from application acceptance', () => {
+  const result = (changes: Partial<EvaluationResult>): EvaluationResult => ({
+    requestId: 'report-fixture', variant: 'current', caseId: 'greeting', repetition: 1,
+    durationMs: 1000, strictJson: false, accepted: false, reason: 'invalid_json', ...changes,
+  });
+  const rows = summarize([
+    result({ httpStatus: 200, content: '{"reply":"你好","exerciseId":null,"needsSupport":false}', strictJson: true, accepted: true, reason: 'accepted' }),
+    result({ httpStatus: 200, content: '你好', durationMs: 3000 }),
+    result({ reason: 'provider_timeout', durationMs: 15000 }),
+    result({ httpStatus: 200, content: '{}', strictJson: true, reason: 'invalid_schema', durationMs: 2000 }),
+    result({ httpStatus: 400, reason: 'provider_http', durationMs: 500 }),
+  ]);
+  assert.deepEqual(rows[0], { variant: 'current', calls: 5, http200WithContent: 3,
+    strictJson: 2, accepted: 1, invalidJson: 1, timeouts: 1, medianMs: 2000 });
+  assert.ok(rows.slice(1).every(row => row.calls === 0 && row.medianMs === null));
 });
