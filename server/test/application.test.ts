@@ -1,15 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { parseEnv } from 'node:util';
 import { Store, sessionCookie, hashPassword, verifyPassword } from '../src/database.js';
 import { createApplication } from '../src/application.js';
 import { newRecord } from '../src/lib/model.js';
 
 const password = 'Valid-password-2026';
-function setup(path = ':memory:') {
-  const store = new Store(path), app = createApplication(store, { origins: ['http://client.test'], secure: true });
+function setup(path = ':memory:', origins = ['http://client.test']) {
+  const store = new Store(path), app = createApplication(store, { origins, secure: true });
   const call = async (path: string, method = 'GET', data?: unknown, token = '', headers: Record<string, string> = {}) => app(new Request(`http://server.test${path}`, { method, headers: { 'content-type': 'application/json', cookie: token, ...headers }, body: data === undefined ? undefined : JSON.stringify(data) }));
   const register = async (email: string) => { const response = await call('/api/auth/register', 'POST', { email, name: '测试用户', password, role: 'admin' }); assert.equal(response.status, 201); return { user: (await response.json()).user, token: response.headers.get('set-cookie')!.split(';')[0] }; };
   return { store, app, call, register };
@@ -56,6 +57,38 @@ test('origin allowlist rejects spoofed proxy headers, malformed and oversized re
   assert.equal((await app(new Request('http://server.test/api/chat/history', { method: 'PUT', headers: { cookie: alice.token, 'content-type': 'application/json' }, body: '{broken' }))).status, 400);
   assert.equal((await call('/api/chat/history', 'PUT', { messages: ['x'.repeat(260_000)] }, alice.token)).status, 413);
   assert.equal((await call('/api/records', 'POST', { record: {} }, alice.token)).status, 400);
+});
+
+test('configured FRP origin supports registration and login while rejecting other origins', async t => {
+  const env = parseEnv(readFileSync(new URL('../.env.example', import.meta.url), 'utf8'));
+  assert.ok(env.CLIENT_ORIGINS, '.env.example must define CLIENT_ORIGINS');
+  const origins = env.CLIENT_ORIGINS.split(',').map(origin => origin.trim());
+  const { store, call } = setup(':memory:', origins); t.after(() => store.close());
+  const headers = { origin: 'https://frp-off.com:58801', 'sec-fetch-site': 'same-origin' };
+  const account = { email: 'frp-origin@example.com', name: '公网测试', password };
+
+  const registration = await call('/api/auth/register', 'POST', account, '', headers);
+  assert.equal(registration.status, 201);
+  const registrationToken = registration.headers.get('set-cookie')!.split(';')[0];
+  assert.equal((await call('/api/auth/me', 'GET', undefined, registrationToken, headers)).status, 200);
+
+  const login = await call('/api/auth/login', 'POST', account, '', headers);
+  assert.equal(login.status, 200);
+  const token = login.headers.get('set-cookie')!.split(';')[0];
+  assert.equal((await call('/api/auth/logout', 'POST', undefined, token, headers)).status, 200);
+  assert.equal((await call('/api/auth/me', 'GET', undefined, token, headers)).status, 401);
+
+  for (const origin of ['http://localhost:3000', 'http://127.0.0.1:3000']) {
+    assert.equal((await call('/api/auth/register', 'POST', {}, '', { ...headers, origin })).status, 400);
+  }
+  for (const origin of ['https://evil.test', 'https://frp-off.com', 'http://frp-off.com:58801', 'https://untrusted.frp-off.com:58801']) {
+    assert.equal((await call('/api/auth/register', 'POST', account, '', {
+      ...headers, origin, 'x-forwarded-host': 'frp-off.com:58801', 'x-forwarded-proto': 'https',
+    })).status, 403);
+  }
+  assert.equal((await call('/api/auth/register', 'POST', account, '', {
+    ...headers, 'sec-fetch-site': 'cross-site',
+  })).status, 403);
 });
 
 test('records are durable, idempotent and isolated; import, individual deletion and clearing', async t => {

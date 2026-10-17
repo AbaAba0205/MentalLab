@@ -21,6 +21,14 @@ npm start
 
 部署时设置 `CLIENT_ORIGINS` 为允许的客户端 Origin，以逗号分隔；服务器与客户端均使用 HTTPS，设置 `COOKIE_SECURE=true`。`HOST` 可设为 `127.0.0.1` 并通过反向代理开放 `/admin`；无需对浏览器开放跨域 API，客户端由 Next.js 同源代理。反向代理应保留原始 Origin、限制请求体和连接数，并按部署策略限制管理站点访问。
 
+当前 FRP 临时测试地址为 `https://frp-off.com:58801`。在服务器 `.env.local` 中设置以下白名单并重启服务器，才能通过公网注册、登录及保存数据：
+
+```dotenv
+CLIENT_ORIGINS=http://localhost:3000,http://127.0.0.1:3000,https://frp-off.com:58801
+```
+
+Origin 必须包含协议、域名和端口，末尾不加 `/`；隧道地址变化后需同步更新。客户端 `allowedDevOrigins` 仅允许 Next.js 开发连接，不能替代后端白名单。只穿透客户端 3000 端口即可，由 Next.js 代理 `/api/*` 到本机后端；不要关闭来源校验或信任浏览器提供的转发头。
+
 `AI_API_KEY`、`AI_BASE_URL` 和可选 `AI_MODEL` 只在本项目读取。未配置时使用有标记的预设回应。
 
 ## AI 诊断日志
