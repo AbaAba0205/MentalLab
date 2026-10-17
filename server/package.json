@@ -11,6 +11,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "node --check public/admin.js",
     "test": "tsx --test test/*.test.ts",
+    "ai:evaluate": "node --env-file-if-exists=.env.local --import tsx scripts/evaluate-ai-prompts.ts",
     "admin:create": "node --env-file-if-exists=.env.local --import tsx src/create-admin.ts"
   },
   "devDependencies": { "@types/node": "26.6.5", "tsx": "4.23.15", "typescript": "6.0.3" }
