@@ -1,6 +1,7 @@
 import type { NextConfig } from 'next';
 
 const config: NextConfig = {
+  allowedDevOrigins: ['frp-off.com'],
   distDir: process.env.NEXT_DIST_DIR || '.next',
   poweredByHeader: false,
   async rewrites() {
