@@ -40,7 +40,8 @@ test('evaluation separates syntax failures, schema failures, unsafe text and acc
   const messages = cases[0].messages;
   assert.equal(evaluateContent('你好', messages).reason, 'invalid_json');
   assert.equal(evaluateContent('{}', messages).reason, 'invalid_schema');
-  assert.equal(evaluateContent('{"reply":"你好","needsSupport":false}', messages).reason, 'ineligible_exercise');
+  assert.equal(evaluateContent('{"reply":"你好","needsSupport":false}', messages).reason, 'invalid_schema');
+  assert.equal(evaluateContent('{"reply":"你好","needsSupport":false,"exerciseId":null,"extra":1}', messages).reason, 'invalid_schema');
   assert.equal(evaluateContent('{"reply":"你必须听我的","exerciseId":null,"needsSupport":false}', messages).reason, 'unsafe_text');
   assert.deepEqual(evaluateContent('{"reply":"你好","exerciseId":null,"needsSupport":false}', messages), { strictJson: true, accepted: true, reason: 'accepted' });
   assert.deepEqual(evaluateContent('```json\n{"reply":"你好","exerciseId":null,"needsSupport":false}\n```', messages), { strictJson: false, accepted: true, reason: 'accepted' });

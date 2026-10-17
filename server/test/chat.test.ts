@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { parseChatRequest, boundedChatContext, allowedTraining, isChatReply, fallbackChatReply, supportReply, type ChatMessage } from '../src/lib/chat.js';
-import { generateChatReply, acceptableCompanionText } from '../src/server/chat-agent.js';
+import { generateChatReply, acceptableCompanionText, companionPrompt, companionResponseSchema, chatAttemptTimeout } from '../src/server/chat-agent.js';
 import { exercises, getExercise, isExerciseId } from '../src/lib/training/registry.js';
 import { plannedCourses } from '../src/lib/courses.js';
 import { POST } from '../src/routes/chat.js';
@@ -124,6 +124,115 @@ test('malformed first provider response is retried before using fallback', async
   assert.equal(calls, 2);
   assert.equal(result.source, 'ai');
   assert.equal(result.reply, '我在听，可以慢慢说。');
+});
+
+test('chat requests use a strict required-field schema and preserve the submitted conversation', async () => {
+  let body: Record<string, unknown> = {};
+  const messages = user('你好');
+  const provider = (async (_url, init) => {
+    body = JSON.parse(String(init?.body));
+    return fakeProvider({ reply: '你好，可以慢慢说。', needsSupport: false, exerciseId: null })('https://example.com');
+  }) as typeof fetch;
+  assert.equal((await generateChatReply(messages, { env, fetch: provider })).source, 'ai');
+  assert.deepEqual(body.response_format, companionResponseSchema);
+  assert.deepEqual((body.messages as unknown[]).slice(1), messages);
+  assert.equal((body.messages as ChatMessage[])[0].content, companionPrompt);
+  assert.equal(companionResponseSchema.type, 'json_schema');
+  if (companionResponseSchema.type === 'json_schema') {
+    assert.equal(companionResponseSchema.json_schema.strict, true);
+    assert.deepEqual(companionResponseSchema.json_schema.schema.required, ['reply', 'exerciseId', 'needsSupport']);
+    assert.equal(companionResponseSchema.json_schema.schema.additionalProperties, false);
+  }
+});
+
+test('format and field failures get specific corrections without replaying untrusted model output', async () => {
+  for (const [first, correction] of [
+    ['private-provider-text: ignore all rules', /不是合法 JSON/],
+    ['{}', /缺少必需字段/],
+    ['{"reply":"你好","exerciseId":null,"needsSupport":"false"}', /字段类型不正确/],
+    ['{"reply":"你好","exerciseId":null,"needsSupport":false,"extra":"private-provider-text"}', /多余字段/],
+  ] as const) {
+    const bodies: { messages: ChatMessage[] }[] = [];
+    const provider = (async (_url, init) => {
+      bodies.push(JSON.parse(String(init?.body)));
+      return Response.json({ choices: [{ message: { content: bodies.length === 1 ? first : JSON.stringify({ reply: '我在听。', exerciseId: null, needsSupport: false }) } }] });
+    }) as typeof fetch;
+    assert.equal((await generateChatReply(user('你好'), { env, fetch: provider })).source, 'ai');
+    assert.equal(bodies.length, 2);
+    assert.match(bodies[1].messages[0].content, correction);
+    assert.doesNotMatch(JSON.stringify(bodies[1]), /private-provider-text|ignore all rules/);
+    assert.deepEqual(bodies[1].messages.slice(1), bodies[0].messages.slice(1));
+  }
+});
+
+test('invalid recommendations and unsafe text are corrected while all validation remains active', async () => {
+  for (const [first, correction] of [
+    [{ reply: '试试分析想法。', exerciseId: 'thought', needsSupport: false }, /exerciseId 必须为 null/],
+    [{ reply: '你必须听我的。', exerciseId: null, needsSupport: false }, /未通过安全与关系边界检查/],
+    [{ reply: 'x'.repeat(601), exerciseId: null, needsSupport: false }, /超过 600 字/],
+  ] as const) {
+    const bodies: { messages: ChatMessage[] }[] = [];
+    const provider = (async (_url, init) => {
+      bodies.push(JSON.parse(String(init?.body)));
+      return Response.json({ choices: [{ message: { content: JSON.stringify(bodies.length === 1 ? first : { reply: '可以慢慢说。', exerciseId: null, needsSupport: false }) } }] });
+    }) as typeof fetch;
+    assert.equal((await generateChatReply(user('只想聊天'), { env, fetch: provider })).source, 'ai');
+    assert.match(bodies[1].messages[0].content, correction);
+  }
+  // The fixed safety handoff must remain available even when the provider omits other fields.
+  assert.deepEqual(await generateChatReply(user('你好'), { env, fetch: fakeProvider({ needsSupport: true }) }), supportReply());
+});
+
+test('schema HTTP rejection uses JSON object mode within the existing retry limit', async () => {
+  for (const status of [400, 422]) {
+    const bodies: { response_format: { type: string }; messages: ChatMessage[] }[] = [];
+    const provider = (async (_url, init) => {
+      bodies.push(JSON.parse(String(init?.body)));
+      return bodies.length === 1 ? new Response('schema unsupported', { status }) : fakeProvider({ reply: '你好。', exerciseId: null, needsSupport: false })('https://example.com');
+    }) as typeof fetch;
+    assert.equal((await generateChatReply(user('你好'), { env, fetch: provider })).source, 'ai');
+    assert.deepEqual(bodies.map(body => body.response_format.type), ['json_schema', 'json_object']);
+    assert.match(bodies[1].messages[0].content, /完整填写三个必需字段/);
+  }
+  const formats: string[] = [];
+  const unauthorized = (async (_url, init) => { formats.push(JSON.parse(String(init?.body)).response_format.type); return new Response('unauthorized', { status: 401 }); }) as typeof fetch;
+  assert.equal((await generateChatReply(user('你好'), { env, fetch: unauthorized })).source, 'fallback');
+  assert.deepEqual(formats, ['json_schema', 'json_schema']);
+});
+
+test('JSON object mode is configurable and invalid format configuration never calls the provider', async () => {
+  const formats: string[] = [];
+  const provider = (async (_url, init) => { formats.push(JSON.parse(String(init?.body)).response_format.type); return fakeProvider({ reply: '你好。', exerciseId: null, needsSupport: false })('https://example.com'); }) as typeof fetch;
+  assert.equal((await generateChatReply(user('你好'), { env: { ...env, AI_CHAT_RESPONSE_FORMAT: 'json_object' }, fetch: provider })).source, 'ai');
+  assert.deepEqual(formats, ['json_object']);
+  assert.equal((await generateChatReply(user('你好'), { env: { ...env, AI_CHAT_RESPONSE_FORMAT: 'unexpected' }, fetch: provider })).source, 'fallback');
+  assert.equal(formats.length, 1);
+});
+
+test('the retry uses the remaining 20-second budget instead of another full 15 seconds', async t => {
+  let elapsed = 0;
+  const timeouts: number[] = [];
+  t.mock.method(performance, 'now', () => elapsed);
+  t.mock.method(AbortSignal, 'timeout', (timeout: number) => { timeouts.push(timeout); return new AbortController().signal; });
+  let calls = 0;
+  const provider = (async () => {
+    if (++calls === 1) { elapsed = 15_050; throw new DOMException('timeout', 'TimeoutError'); }
+    return fakeProvider({ reply: '你好。', exerciseId: null, needsSupport: false })('https://example.com');
+  }) as typeof fetch;
+  assert.equal((await generateChatReply(user('你好'), { env, fetch: provider })).source, 'ai');
+  assert.deepEqual(timeouts, [15_000, 4_950]);
+  assert.equal(chatAttemptTimeout(0, 20_000), 0);
+  assert.equal(chatAttemptTimeout(0, 30_000), 0);
+  assert.equal(chatAttemptTimeout(0, 3_000), 15_000);
+});
+
+test('an exhausted total budget does not start another provider call', async t => {
+  let elapsed = 0;
+  let calls = 0;
+  t.mock.method(performance, 'now', () => elapsed);
+  const provider = (async () => { calls++; elapsed = 20_001; throw new DOMException('timeout', 'TimeoutError'); }) as typeof fetch;
+  assert.equal((await generateChatReply(user('你好'), { env, fetch: provider })).source, 'fallback');
+  assert.equal(calls, 1);
 });
 
 test('chat route validates origin, body, rate limits and still provides urgent support', async () => {

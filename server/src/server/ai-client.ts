@@ -8,11 +8,22 @@ export interface AIEnvironment {
   AI_BASE_URL?: string;
   AI_MODEL?: string;
   AI_INTERACTION_LOG_DIR?: string;
+  AI_CHAT_RESPONSE_FORMAT?: string;
 }
 
 export interface ProviderDependencies {
   fetch: typeof fetch;
   env: AIEnvironment;
+}
+
+export type AIResponseFormat = { type: 'json_object' } | {
+  type: 'json_schema';
+  json_schema: { name: string; strict: true; schema: Record<string, unknown> };
+};
+
+export interface ModelRequestOptions {
+  responseFormat?: AIResponseFormat;
+  timeoutMs?: number;
 }
 
 interface ModelReply {
@@ -119,6 +130,7 @@ export async function requestModelText(
   prompt: string, messages: ScenarioMessage[],
   dependencies: ProviderDependencies = { fetch, env: process.env as AIEnvironment },
   interactionContext?: AIInteractionContext,
+  options: ModelRequestOptions = {},
 ): Promise<string> {
   const config = aiConfiguration(dependencies.env);
   if (!config.configured) throw new AIProviderError('provider_not_configured');
@@ -126,7 +138,8 @@ export async function requestModelText(
   try { endpoint = chatCompletionsEndpoint(dependencies.env.AI_BASE_URL!); new URL(endpoint); }
   catch { throw new AIProviderError('provider_config'); }
   const body = JSON.stringify({ model: config.model, temperature: 0.6, max_tokens: 700,
-    messages: [{ role: 'system', content: prompt }, ...messages] });
+    messages: [{ role: 'system', content: prompt }, ...messages],
+    ...(options.responseFormat ? { response_format: options.responseFormat } : {}) });
   const interaction = await startAIInteraction(body, config.model, interactionContext, dependencies.env.AI_INTERACTION_LOG_DIR);
   let response: Response | undefined;
   let responseComplete = false;
@@ -135,7 +148,7 @@ export async function requestModelText(
       response = await dependencies.fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + dependencies.env.AI_API_KEY!.trim() },
-        body, signal: AbortSignal.timeout(15_000), cache: 'no-store',
+        body, signal: AbortSignal.timeout(options.timeoutMs ?? 15_000), cache: 'no-store',
       });
     } catch (error) { throw transportError(error); }
     await interaction.responseHeaders(response);

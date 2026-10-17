@@ -44,10 +44,11 @@ export function evaluateContent(content: string, messages: ChatMessage[]) {
   let value: unknown;
   try { value = JSON.parse(content.replace(/^\s*```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim()); }
   catch { return { strictJson, accepted: false, reason: 'invalid_json' }; }
-  if (!value || typeof value !== 'object') return { strictJson, accepted: false, reason: 'invalid_schema' };
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return { strictJson, accepted: false, reason: 'invalid_schema' };
   const result = value as Record<string, unknown>;
   if (result.needsSupport === true) return { strictJson, accepted: true, reason: 'safety_handoff' };
-  if (result.needsSupport !== false || typeof result.reply !== 'string' || !result.reply.trim()) return { strictJson, accepted: false, reason: 'invalid_schema' };
+  if (Object.keys(result).length !== 3 || !['reply', 'exerciseId', 'needsSupport'].every(key => Object.hasOwn(result, key))
+    || result.needsSupport !== false || typeof result.reply !== 'string' || !result.reply.trim()) return { strictJson, accepted: false, reason: 'invalid_schema' };
   if (result.reply.length > 600) return { strictJson, accepted: false, reason: 'response_too_long' };
   if (!acceptableCompanionText(result.reply)) return { strictJson, accepted: false, reason: 'unsafe_text' };
   if (result.exerciseId !== null && !allowedTraining(result.exerciseId, messages)) return { strictJson, accepted: false, reason: 'ineligible_exercise' };
