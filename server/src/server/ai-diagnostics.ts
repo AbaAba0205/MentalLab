@@ -5,7 +5,8 @@ export type AIDiagnosticReason =
   | 'provider_http' | 'provider_invalid_response' | 'invalid_json' | 'invalid_schema'
   | 'response_too_long' | 'unsafe_text' | 'ineligible_exercise' | 'model_safety_handoff'
   | 'local_safety_handoff' | 'rate_limited' | 'fallback'
-  | 'authentication_required' | 'request_forbidden' | 'invalid_request' | 'internal_error';
+  | 'authentication_required' | 'request_forbidden' | 'invalid_request' | 'internal_error'
+  | 'interaction_log_failed';
 
 export type AIDiagnosticEvent = {
   event: 'ai_http' | 'ai_request' | 'ai_attempt';

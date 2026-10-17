@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { allowedTraining, chatNeedsSupport, fallbackChatReply, supportReply, type ChatMessage, type ChatReply } from '../lib/chat.js';
 import { exercises } from '../lib/training/registry.js';
 import { aiConfiguration, classifyAIError, requestModelText, type ProviderDependencies } from './ai-client.js';
@@ -38,10 +39,11 @@ export async function generateChatReply(messages: ChatMessage[], dependencies?: 
   }
   // The configured provider occasionally returns an empty or malformed first response.
   // Retry once, while applying the same validation before either response reaches the UI.
+  const requestId = diagnostics?.requestId || randomUUID();
   for (let attempt = 0; attempt < 2; attempt += 1) {
     const attemptStarted = performance.now();
     try {
-      const raw = await requestModelText(companionPrompt, messages, dependencies);
+      const raw = await requestModelText(companionPrompt, messages, dependencies, { requestId, feature: 'chat', attempt: attempt + 1 });
       let value: unknown;
       try { value = JSON.parse(raw.replace(/^\s*```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim()); }
       catch { throw new ChatResponseError('invalid_json'); }

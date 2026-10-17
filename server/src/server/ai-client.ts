@@ -1,10 +1,13 @@
+import { randomUUID } from 'node:crypto';
 import { fallbackScenarioReply, MAX_SCENARIO_TURNS, type ScenarioMessage, type ScenarioTurnResponse } from '../lib/scenario.js';
 import { diagnosticDuration, type AIDiagnosticContext, type AIDiagnosticReason } from './ai-diagnostics.js';
+import { AIInteractionLogError, startAIInteraction, type AIInteractionContext } from './ai-interactions.js';
 
 export interface AIEnvironment {
   AI_API_KEY?: string;
   AI_BASE_URL?: string;
   AI_MODEL?: string;
+  AI_INTERACTION_LOG_DIR?: string;
 }
 
 export interface ProviderDependencies {
@@ -94,7 +97,8 @@ export async function generateScenarioReply(
   const turn = messages.filter(message => message.role === 'user').length;
   const attemptStarted = performance.now();
   try {
-    const parsed = parseModelReply(await requestModelText(systemPrompt, messages, dependencies));
+    const parsed = parseModelReply(await requestModelText(systemPrompt, messages, dependencies,
+      { requestId: diagnostics?.requestId || randomUUID(), feature: 'scenario', attempt: 1 }));
     diagnostics?.log({ event: 'ai_attempt', requestId: diagnostics.requestId, feature: 'scenario', outcome: 'success', attempt: 1, durationMs: diagnosticDuration(attemptStarted), model: config.model });
     diagnostics?.log({ event: 'ai_request', requestId: diagnostics.requestId, feature: 'scenario', outcome: 'success', durationMs: diagnosticDuration(started), model: config.model });
     return {
@@ -114,38 +118,68 @@ export async function generateScenarioReply(
 export async function requestModelText(
   prompt: string, messages: ScenarioMessage[],
   dependencies: ProviderDependencies = { fetch, env: process.env as AIEnvironment },
+  interactionContext?: AIInteractionContext,
 ): Promise<string> {
   const config = aiConfiguration(dependencies.env);
   if (!config.configured) throw new AIProviderError('provider_not_configured');
   let endpoint: string;
   try { endpoint = chatCompletionsEndpoint(dependencies.env.AI_BASE_URL!); new URL(endpoint); }
   catch { throw new AIProviderError('provider_config'); }
-  let response: Response;
+  const body = JSON.stringify({ model: config.model, temperature: 0.6, max_tokens: 700,
+    messages: [{ role: 'system', content: prompt }, ...messages] });
+  const interaction = await startAIInteraction(body, config.model, interactionContext, dependencies.env.AI_INTERACTION_LOG_DIR);
+  let response: Response | undefined;
+  let responseComplete = false;
   try {
-    response = await dependencies.fetch(endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + dependencies.env.AI_API_KEY!.trim() },
-      body: JSON.stringify({ model: config.model, temperature: 0.6, max_tokens: 700,
-        messages: [{ role: 'system', content: prompt }, ...messages] }),
-      signal: AbortSignal.timeout(15_000), cache: 'no-store',
-    });
+    try {
+      response = await dependencies.fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + dependencies.env.AI_API_KEY!.trim() },
+        body, signal: AbortSignal.timeout(15_000), cache: 'no-store',
+      });
+    } catch (error) { throw transportError(error); }
+    await interaction.responseHeaders(response);
+    const chunks: Uint8Array[] = [];
+    const reader = response.body?.getReader();
+    if (reader) {
+      try {
+        while (true) {
+          let chunk: ReadableStreamReadResult<Uint8Array>;
+          try { chunk = await reader.read(); }
+          catch (error) { throw transportError(error, response.status); }
+          if (chunk.done) break;
+          await interaction.responseChunk(chunk.value);
+          chunks.push(chunk.value);
+        }
+      } catch (error) {
+        await reader.cancel().catch(() => {});
+        throw error;
+      } finally { reader.releaseLock(); }
+    }
+    responseComplete = true;
+    if (!response.ok) throw new AIProviderError('provider_http', response.status);
+    let payload: unknown;
+    try { payload = JSON.parse(new TextDecoder().decode(Buffer.concat(chunks))); }
+    catch { throw new AIProviderError('provider_invalid_response', response.status); }
+    let text: string;
+    try { text = modelText(payload); }
+    catch { throw new AIProviderError('provider_invalid_response', response.status); }
+    await interaction.modelText(text);
+    await interaction.finish(response, undefined, responseComplete);
+    return text;
   } catch (error) {
-    const name = error && typeof error === 'object' && 'name' in error ? String(error.name) : '';
-    throw new AIProviderError(name === 'TimeoutError' || name === 'AbortError' ? 'provider_timeout' : 'provider_network');
+    await interaction.finish(response, classifyAIError(error).reason, responseComplete);
+    throw error;
   }
-  if (!response.ok) throw new AIProviderError('provider_http', response.status);
-  let payload: unknown;
-  try { payload = await response.json(); }
-  catch (error) {
-    const name = error && typeof error === 'object' && 'name' in error ? String(error.name) : '';
-    throw new AIProviderError(name === 'TimeoutError' || name === 'AbortError' ? 'provider_timeout'
-      : error instanceof SyntaxError ? 'provider_invalid_response' : 'provider_network', response.status);
-  }
-  try { return modelText(payload); }
-  catch { throw new AIProviderError('provider_invalid_response', response.status); }
+}
+
+function transportError(error: unknown, status?: number): AIProviderError {
+  const name = error && typeof error === 'object' && 'name' in error ? String(error.name) : '';
+  return new AIProviderError(name === 'TimeoutError' || name === 'AbortError' ? 'provider_timeout' : 'provider_network', status);
 }
 
 export function classifyAIError(error: unknown): { reason: AIDiagnosticReason; providerStatus?: number } {
+  if (error instanceof AIInteractionLogError) return { reason: 'interaction_log_failed' };
   if (error instanceof AIProviderError) return { reason: error.reason, providerStatus: error.providerStatus };
   if (error instanceof SyntaxError) return { reason: 'invalid_json' };
   return { reason: 'invalid_schema' };
