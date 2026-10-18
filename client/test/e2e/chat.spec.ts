@@ -36,7 +36,7 @@ test('companion is the default home and courses have an honest reserved entry', 
   await expect(page.locator('.course-card').first()).toContainText('筹备中');
   await page.screenshot({ path: testInfo.outputPath('courses.png'), fullPage: true });
   await click(page, '去练习室 ↗');
-  await expect(page.locator('.exercise-card')).toHaveCount(3);
+  await expect(page.locator('.exercise-card')).toHaveCount(23);
   await page.reload();
   await expect(page.getByRole('heading', { name: '随心聊，慢慢说' })).toBeVisible();
 });
@@ -194,19 +194,19 @@ test('preset chat is labeled, persists on the server and survives refresh', asyn
 
 test('inline training completes in chat and saves only its reflection', async ({ page }, testInfo) => {
   await send(page, '我想试一个小练习');
-  await expect(page.locator('.chat-training-card')).toContainText('先稳一稳');
+  await expect(page.locator('.chat-training-card')).toContainText('身体感觉观察');
   await click(page, '开始小训练');
   await expect(page.locator('#dialog')).toHaveCount(0);
   await click(page, '我想试试 ↗');
   await click(page, '下一步 →');
   await click(page, '开始计时');
-  await expect(page.locator('.timer-ring strong')).toHaveText('00:29');
+  await expect(page.locator('.timer-ring strong')).toHaveText('00:59');
   await click(page, '暂停计时');
   await page.screenshot({ path: testInfo.outputPath('inline-training.png'), fullPage: true });
   await click(page, '下一步 →');
   await click(page, '完成，去复盘 →');
   await click(page, '暂时没感觉');
-  await page.locator('.inline-training textarea').fill('听见窗外的鸟声');
+  await page.locator('#chat-reflection').fill('听见窗外的鸟声');
   await click(page, '保存这一步 ✓');
   await expect(page.locator('.training-status')).toContainText('已完成');
   await navigate(page, 'records');
@@ -224,6 +224,30 @@ test('skipping a recommendation prevents repeated unsolicited cards', async ({ p
   await send(page, '明天考试让我很紧张');
   await expect(page.locator('.chat-message.assistant').last()).toContainText('不安排练习');
   await expect(page.getByRole('button', { name: '开始小训练' })).toHaveCount(0);
+});
+
+test('an old placeholder recommendation preserves its chat and does not prevent future saves', async ({ page }) => {
+  await page.route('**/api/chat/conversations', async route => {
+    const response = await route.fetch();
+    const snapshot = await response.json();
+    snapshot.conversation.messages = [
+      { role: 'user', content: '这是旧版留下的聊天' },
+      { role: 'assistant', content: '原来的聊天内容还在', result: { action: 'reply', source: 'fallback', reply: '原来的聊天内容还在', exerciseId: 'ground' } },
+    ];
+    await route.fulfill({ response, json: snapshot });
+  });
+  await page.reload();
+  await expect(page.getByRole('log')).toContainText('原来的聊天内容还在');
+  await expect(page.locator('.chat-training-card')).toHaveCount(0);
+  await page.unroute('**/api/chat/conversations');
+  await send(page, '我想继续聊聊');
+  await expect.poll(async () => {
+    const snapshot = await (await page.request.get('/api/chat/conversations')).json();
+    return snapshot.conversation.messages.length;
+  }).toBe(4);
+  await page.reload();
+  await expect(page.getByRole('log')).toContainText('原来的聊天内容还在');
+  await expect(page.getByRole('log')).toContainText('我想继续聊聊');
 });
 
 test('risk during chat removes existing training cards and pauses ordinary messages', async ({ page }) => {
@@ -252,7 +276,7 @@ test('model safety response and risk inside a training both stop the session', a
   await click(page, '下一步 →');
   await click(page, '下一步 →');
   await click(page, '完成，去复盘 →');
-  await page.locator('.inline-training textarea').fill('大家没有我会更好');
+  await page.locator('#chat-reflection').fill('大家没有我会更好');
   await click(page, '保存这一步 ✓');
   await expect(page.locator('.chat-support')).toBeVisible();
   await navigate(page, 'records');
@@ -300,13 +324,13 @@ test('clear requires confirmation, user markup stays literal and mobile controls
 
 test('training library redirects high intensity to stabilization before analysis', async ({ page }) => {
   await navigate(page, 'exercises');
-  await page.locator('[data-exercise="thought"]').click();
+  await page.locator('[data-exercise="describe-facts"]').click();
   await page.locator('#intensity').fill('8');
   await expect(page.getByRole('button', { name: '我想试试 ↗' })).toHaveCount(0);
   await click(page, '先试试稳定练习');
-  await expect(page.locator('#dialog-title')).toHaveText('先稳一稳');
+  await expect(page.locator('#dialog-title')).toHaveText('身体感觉观察');
   await click(page, '我想试试 ↗');
-  await expect(page.locator('#dialog-title')).toHaveText('找一个舒服的位置');
+  await expect(page.locator('#dialog-title')).toHaveText('注意此刻的身体');
 });
 
 
@@ -317,7 +341,7 @@ test('a late model reply cannot resume chat after training requests real support
   const settled = new Promise<void>(resolve => { finished = resolve; });
   await page.route('**/api/chat/turn', async route => {
     await new Promise(resolve => setTimeout(resolve, 500));
-    try { await route.fulfill({ json: { action: 'reply', source: 'ai', reply: '这是一条已经过期的普通回应', exerciseId: 'ground' } }); }
+    try { await route.fulfill({ json: { action: 'reply', source: 'ai', reply: '这是一条已经过期的普通回应', exerciseId: 'observe-body' } }); }
     finally { finished(); }
   });
   await page.locator('#chat-input').fill('我想再说一点');

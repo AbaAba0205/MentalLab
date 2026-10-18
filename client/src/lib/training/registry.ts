@@ -1,10 +1,8 @@
-import { ground } from './modules/ground';
-import { thought } from './modules/thought';
-import { plan } from './modules/plan';
+import { dbtModules } from './dbt';
 import type { TrainingModule } from './types';
 
 // Add a module here once: the library, runner and AI catalog all use this registry.
-export const trainingModules = [ground, thought, plan];
+export const trainingModules = dbtModules;
 export type ExerciseId = (typeof trainingModules)[number]['id'];
 export type Exercise = TrainingModule & { id: ExerciseId };
 export const exercises: Exercise[] = trainingModules;

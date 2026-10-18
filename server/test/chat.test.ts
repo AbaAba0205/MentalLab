@@ -38,17 +38,17 @@ test('registered training and reserved course catalogs have distinct IDs and saf
 });
 
 test('training policy honors refusal, later consent and module intensity restrictions', () => {
-  assert.equal(allowedTraining('ground', user('想试个练习')), 'ground');
-  assert.equal(allowedTraining('thought', user('想整理担心')), null);
-  assert.equal(allowedTraining('thought', user('困扰 3 分，想整理担心')), 'thought');
+  assert.equal(allowedTraining('observe-body', user('想试个练习')), 'observe-body');
+  assert.equal(allowedTraining('describe-facts', user('想整理担心')), null);
+  assert.equal(allowedTraining('describe-facts', user('困扰 3 分，想整理担心')), 'describe-facts');
   for (const text of ['困扰 8 分，想练习', '困扰 5/10，想练习', '情绪2分，但是我喘不过气']) {
-    assert.equal(allowedTraining('thought', user(text)), null);
-    assert.equal(allowedTraining('plan', user(text)), null);
+    assert.equal(allowedTraining('describe-facts', user(text)), null);
+    assert.equal(allowedTraining('participate-activity', user(text)), null);
   }
   const history: ChatMessage[] = [...user('不想练习，只想聊'), { role: 'assistant', content: '好' }, ...user('考试让我紧张')];
-  assert.equal(allowedTraining('ground', history), null);
-  assert.equal(allowedTraining('ground', [...history, { role: 'assistant', content: '我在听' }, ...user('现在想试一个练习')]), 'ground');
-  assert.equal(allowedTraining('ground', user('我不想活了')), null);
+  assert.equal(allowedTraining('observe-body', history), null);
+  assert.equal(allowedTraining('observe-body', [...history, { role: 'assistant', content: '我在听' }, ...user('现在想试一个练习')]), 'observe-body');
+  assert.equal(allowedTraining('observe-body', user('我不想活了')), null);
 });
 
 test('risk anywhere in the submitted conversation interrupts before model calls', async () => {
@@ -62,7 +62,7 @@ test('risk anywhere in the submitted conversation interrupts before model calls'
 });
 
 test('provider can flag contextual danger and only fixed support content is displayed', async () => {
-  const result = await generateChatReply(user('有一件很难说的事'), { env, fetch: fakeProvider({ reply: 'untrusted crisis instructions', needsSupport: true, exerciseId: 'ground' }) });
+  const result = await generateChatReply(user('有一件很难说的事'), { env, fetch: fakeProvider({ reply: 'untrusted crisis instructions', needsSupport: true, exerciseId: 'observe-body' }) });
   assert.deepEqual(result, supportReply());
 });
 
@@ -70,14 +70,14 @@ test('warm model response and eligible training are returned with validated sour
   let body: Record<string, unknown> = {};
   const fetchMock = (async (_url, init) => {
     body = JSON.parse(String(init?.body));
-    return Response.json({ choices: [{ message: { content: JSON.stringify({ reply: '可以慢慢来，要试试这个小练习吗？', needsSupport: false, exerciseId: 'thought' }) } }] });
+    return Response.json({ choices: [{ message: { content: JSON.stringify({ reply: '可以慢慢来，要试试这个小练习吗？', needsSupport: false, exerciseId: 'describe-facts' }) } }] });
   }) as typeof fetch;
   const result = await generateChatReply(user('困扰 2 分，我愿意练习整理想法'), { env, fetch: fetchMock });
-  assert.equal(result.source, 'ai'); assert.equal(result.exerciseId, 'thought');
+  assert.equal(result.source, 'ai'); assert.equal(result.exerciseId, 'describe-facts');
   assert.ok(isChatReply(result));
   const messages = body.messages as ChatMessage[];
   assert.match(messages[0].content, /不责怪、不羞辱、不诊断/);
-  assert.match(messages[0].content, /先稳一稳/);
+  assert.match(messages[0].content, /身体感觉观察/);
 });
 
 test('harmful, manipulative, medical and malformed output never reaches the user', async () => {
@@ -95,8 +95,8 @@ test('harmful, manipulative, medical and malformed output never reaches the user
 
 test('model cannot recommend cognitive training at high intensity or override refusal', async () => {
   for (const text of ['困扰 8 分，想练习', '我不想练习，只想聊']) {
-    const result = await generateChatReply(user(text), { env, fetch: fakeProvider({ reply: '来分析一下想法。', needsSupport: false, exerciseId: 'thought' }) });
-    assert.equal(result.source, 'fallback'); assert.notEqual(result.exerciseId, 'thought');
+    const result = await generateChatReply(user(text), { env, fetch: fakeProvider({ reply: '来分析一下想法。', needsSupport: false, exerciseId: 'describe-facts' }) });
+    assert.equal(result.source, 'fallback'); assert.notEqual(result.exerciseId, 'describe-facts');
     assert.notEqual(result.reply, '来分析一下想法。');
   }
 });
@@ -107,9 +107,9 @@ test('unconfigured or failed models use clear preset content without leaking sec
     const result = await generateChatReply(user('今天很累'), dependencies);
     assert.equal(result.source, 'fallback'); assert.doesNotMatch(result.reply, /test-key/);
   }
-  assert.equal(fallbackChatReply(user('我想练习')).exerciseId, 'ground');
+  assert.equal(fallbackChatReply(user('我想练习')).exerciseId, 'observe-body');
   assert.equal(fallbackChatReply(user('只想聊天')).exerciseId, null);
-  assert.equal(isChatReply({ ...supportReply(), exerciseId: 'ground' }), false);
+  assert.equal(isChatReply({ ...supportReply(), exerciseId: 'observe-body' }), false);
   assert.equal(isChatReply({ ...supportReply(), reply: '' }), false);
 });
 
@@ -167,7 +167,7 @@ test('format and field failures get specific corrections without replaying untru
 
 test('invalid recommendations and unsafe text are corrected while all validation remains active', async () => {
   for (const [first, correction] of [
-    [{ reply: '试试分析想法。', exerciseId: 'thought', needsSupport: false }, /exerciseId 必须为 null/],
+    [{ reply: '试试分析想法。', exerciseId: 'describe-facts', needsSupport: false }, /exerciseId 必须为 null/],
     [{ reply: '你必须听我的。', exerciseId: null, needsSupport: false }, /未通过安全与关系边界检查/],
     [{ reply: 'x'.repeat(601), exerciseId: null, needsSupport: false }, /超过 600 字/],
   ] as const) {

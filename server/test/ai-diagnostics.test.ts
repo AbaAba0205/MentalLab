@@ -40,7 +40,7 @@ test('chat diagnostics distinguish validation failures and finish with a fallbac
     [{ reply: '', needsSupport: false, exerciseId: null }, 'invalid_schema'],
     [{ reply: 'x'.repeat(601), needsSupport: false, exerciseId: null }, 'response_too_long'],
     [{ reply: '请访问 https://bad.example', needsSupport: false, exerciseId: null }, 'unsafe_text'],
-    [{ reply: '试试分析。', needsSupport: false, exerciseId: 'thought' }, 'ineligible_exercise'],
+    [{ reply: '试试分析。', needsSupport: false, exerciseId: 'describe-facts' }, 'ineligible_exercise'],
   ] as const) {
     const { events, diagnostics } = capture();
     const provider = (async () => Response.json({ choices: [{ message: { content: JSON.stringify(payload) } }] })) as typeof fetch;

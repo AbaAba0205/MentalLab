@@ -31,7 +31,7 @@ export const moods = [
 
 export function recommendation(intensity: number): ExerciseId {
   if (!validIntensity(intensity) || intensity === null) throw new Error('Invalid intensity');
-  return intensity >= 4 ? 'ground' : 'plan';
+  return intensity >= 4 ? 'observe-body' : 'participate-activity';
 }
 
 // Demonstration guard only; this is NOT a clinical risk assessment.

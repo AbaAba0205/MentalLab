@@ -6,6 +6,29 @@ export interface ExerciseStep {
   choices?: string[];
   required?: boolean;
   timer?: boolean;
+  durationSeconds?: number;
+  breathing?: boolean;
+  counter?: string;
+  examples?: string[];
+  fields?: PracticeField[];
+}
+
+export interface PracticeField {
+  id: string;
+  label: string;
+  placeholder?: string;
+  choices?: string[];
+  multiple?: boolean;
+}
+
+export interface SkillGuide {
+  title: string;
+  explanation: string;
+  examples: string[];
+  methods: string[];
+  metric: string;
+  levels: string[];
+  reflections: string[];
 }
 
 export interface TrainingModule {
@@ -21,5 +44,6 @@ export interface TrainingModule {
   useWhen: string;
   /** Above this self-rated intensity, offer stabilization before this module. */
   maxIntensity?: number;
+  guide?: SkillGuide;
   steps: ExerciseStep[];
 }

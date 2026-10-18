@@ -4,7 +4,7 @@ import { recommendation, needsSupport, newRecord, readRecords, seedRecords, exer
 import { steps } from '../src/lib/exercises';
 
 test('recommendation boundaries choose an existing exercise', () => {
-  for (const [score, expected] of [[0, 'plan'], [3, 'plan'], [4, 'ground'], [6, 'ground'], [7, 'ground'], [10, 'ground']] as const) {
+  for (const [score, expected] of [[0, 'participate-activity'], [3, 'participate-activity'], [4, 'observe-body'], [6, 'observe-body'], [7, 'observe-body'], [10, 'observe-body']] as const) {
     assert.equal(recommendation(score), expected);
     assert.ok(exercises.some(e => e.id === expected));
   }
@@ -17,7 +17,7 @@ test('demonstration support guard recognizes explicit signals', () => {
 });
 
 test('record roundtrip retains a non-improving result without judging it', () => {
-  const r = newRecord({ kind: 'exercise', title: '先稳一稳', before: 4, after: 6, note: '暂时没有帮助', helpful: '有点不舒服' });
+  const r = newRecord({ kind: 'exercise', title: '身体感觉观察', before: 4, after: 6, note: '暂时没有帮助', helpful: '有点不舒服' });
   assert.deepEqual(readRecords(JSON.stringify([r])), [r]);
   assert.equal(r.demo, false);
 });
@@ -77,6 +77,6 @@ test('sample records are labeled, distinct and deterministic; empty records stay
 test('registered exercises expose usable steps without a fixed step count', () => {
   for (const exercise of exercises) {
     assert.ok(steps[exercise.id].length > 0);
-    for (const step of steps[exercise.id]) assert.ok(step.title && step.intro && (step.prompt || step.placeholder || step.choices?.length));
+    for (const step of steps[exercise.id]) assert.ok(step.title && step.intro && (step.prompt || step.fields?.length || step.timer || step.examples?.length));
   }
 });

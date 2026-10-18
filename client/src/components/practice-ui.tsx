@@ -35,8 +35,8 @@ export function Intensity({ value, onChange, label = '此刻的困扰有多强�
   </>;
 }
 
-export function PracticeTimer({ id = 'timer-value' }: { id?: string }) {
-  const [remaining, setRemaining] = useState(30);
+export function PracticeTimer({ id = 'timer-value', durationSeconds = 30, breathing = false }: { id?: string; durationSeconds?: number; breathing?: boolean }) {
+  const [remaining, setRemaining] = useState(durationSeconds);
   const [running, setRunning] = useState(false);
   const [started, setStarted] = useState(false);
   const deadline = useRef(0);
@@ -51,17 +51,17 @@ export function PracticeTimer({ id = 'timer-value' }: { id?: string }) {
   }, [running]);
   function toggle() {
     if (running) { setRunning(false); return; }
-    const seconds = remaining || 30;
+    const seconds = remaining || durationSeconds;
     setRemaining(seconds);
     deadline.current = Date.now() + seconds * 1000;
     setStarted(true);
     setRunning(true);
   }
   return <>
-    <div className="timer-ring"><strong id={id}>00:{String(remaining).padStart(2, '0')}</strong><small>给自己一点时间</small></div>
+    <div className={`timer-ring${breathing && running ? ' breathing' : ''}`}><strong id={id}>{String(Math.floor(remaining / 60)).padStart(2, '0')}:{String(remaining % 60).padStart(2, '0')}</strong><small>{breathing && running ? (Math.floor((durationSeconds - remaining) / 4) % 2 === 0 ? '慢慢吸气' : '慢慢呼气') : '给自己一点时间'}</small></div>
     <div className="timer-controls">
       <button className="secondary" onClick={toggle}>{running ? '暂停计时' : remaining === 0 ? '再来一次' : started ? '继续计时' : '开始计时'}</button>
-      <button className="text-button" onClick={() => { setRunning(false); setStarted(false); setRemaining(30); }}>重置</button>
+      <button className="text-button" onClick={() => { setRunning(false); setStarted(false); setRemaining(durationSeconds); }}>重置</button>
     </div>
   </>;
 }

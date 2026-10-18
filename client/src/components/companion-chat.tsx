@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { CHAT_GREETING, boundedChatContext, trainingPolicy, chatNeedsSupport, isChatReply, supportReply, type ChatMessage, type ChatReply } from '@/lib/chat';
+import { CHAT_GREETING, boundedChatContext, trainingPolicy, chatNeedsSupport, isChatReply, supportReply, restoreChatTraining, type ChatMessage, type ChatReply } from '@/lib/chat';
 import { getExercise } from '@/lib/training/registry';
 import type { PracticeRecord } from '@/lib/model';
 import { TrainingSession } from './training-session';
@@ -18,7 +18,7 @@ export function CompanionChat({ active, switching, model, conversationId, initia
   switching: boolean;
   onBusyChange: (value: boolean) => void; onHistorySaved: (conversation: ConversationSummary) => void;
 }) {
-  const [messages, setMessages] = useState<Entry[]>(initialMessages);
+  const [messages, setMessages] = useState<Entry[]>(() => restoreChatTraining(initialMessages));
   const previousHistory = useRef(messages);
   const historyQueue = useRef<Promise<void>>(Promise.resolve());
   const pendingSaves = useRef(0);

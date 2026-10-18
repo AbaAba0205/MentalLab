@@ -82,7 +82,7 @@ function Workspace({ user, onLogout, initialRecords, initialChat }: { user: Acco
   const [mood, setMood] = useState('');
   const [intensity, setIntensity] = useState(5);
   const [note, setNote] = useState('');
-  const [exerciseId, setExerciseId] = useState<ExerciseId>('ground');
+  const [exerciseId, setExerciseId] = useState<ExerciseId>('observe-body');
   const [before, setBefore] = useState(5);
   const [deleteId, setDeleteId] = useState('');
   const exercise = exercises.find(e => e.id === exerciseId)!;
@@ -185,7 +185,7 @@ function Workspace({ user, onLogout, initialRecords, initialChat }: { user: Acco
                 return <div className="day" key={i}><i style={{ '--height': `${Math.min(43, 7 + count * 18)}px` } as CSSProperties} /><span>{['日', '一', '二', '三', '四', '五', '六'][day.getDay()]}</span></div>;
               })}</div><p>每一次停下来，都是在照顾自己。<br />{records.some(r => r.demo) ? '含示例记录' : '来自你的记录'}</p></section>
             </div>
-            <section><div className="section-heading"><div><h2>今天，想从哪里开始？</h2><p>为考试前的你，准备了三个小练习</p></div><button className="text-button" onClick={() => navigate('exercises')}>探索练习室 <span>↗</span></button></div><div className="exercise-grid">{exercises.map(ex => <ExerciseCard key={ex.id} exercise={ex} onStart={start} />)}</div></section>
+            <section><div className="section-heading"><div><h2>今天，想从哪里开始？</h2><p>从参与、观察、智慧心和描述中，选一个适合此刻的练习</p></div><button className="text-button" onClick={() => navigate('exercises')}>探索练习室 <span>↗</span></button></div><div className="exercise-grid">{['observe-body', 'describe-facts', 'participate-activity'].map(id => exercises.find(ex => ex.id === id)!).map(ex => <ExerciseCard key={ex.id} exercise={ex} onStart={start} />)}</div></section>
             <ScenarioCard onStart={() => setScreen('scenario')} />
             <div className="bottom-grid"><section className="checkin-card"><div className="small-heading"><h2>此刻的心情，像哪一种？</h2><span>没有标准答案</span></div><MoodButtons onSelect={checkin} /></section><section className="recent-card"><div className="small-heading"><h2>最近的小小进展</h2><button className="text-button" onClick={() => navigate('records')}>查看全部 ↗</button></div>{records.slice(0, 2).map(r => <Recent key={r.id} record={r} />)}{records.length === 0 && <p className="no-records">你的第一条记录，会从这里开始。</p>}</section></div>
           </>}

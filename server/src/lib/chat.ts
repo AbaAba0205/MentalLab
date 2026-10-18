@@ -83,7 +83,7 @@ export function fallbackChatReply(messages: ChatMessage[]): ChatReply {
   let exerciseId: ExerciseId | null = null;
   if (policy.declined) reply = '好，我们先聊，不安排练习。你希望我先听你说哪一部分？';
   else if (policy.overwhelmed || /(?:想|推荐|带我|做个|试试).{0,8}(?:练习|训练)|稳一稳/.test(latest)) {
-    exerciseId = allowedTraining('ground', messages);
+    exerciseId = allowedTraining('observe-body', messages);
     reply = '我们可以先慢一点，不急着分析或解决。如果你愿意，可以试试下面的小练习；也可以跳过，继续说说此刻的感受。';
   } else if (/考试|担心|紧张|焦虑/.test(latest)) reply = '这件事似乎让你挂心。我们不用急着说服自己不紧张；你愿意说说最担心的是哪一部分吗？';
   else if (/孤单|孤独|难过|低落/.test(latest)) reply = '谢谢你愿意说起这些感受。你不需要马上振作起来；最近有什么时刻让这种感觉特别明显吗？';

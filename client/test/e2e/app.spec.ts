@@ -28,18 +28,18 @@ test('check-in, grounding timer, reflection, reload and confirmed deletion', asy
   await page.locator('#intensity').fill('8');
   await page.locator('#note').fill('明天有数学考试，我有些紧张。');
   await click(page, '记录此刻，看看推荐 ↗');
-  await expect(page.locator('.summary')).toContainText('先稳一稳');
+  await expect(page.locator('.summary')).toContainText('身体感觉观察');
   await click(page, '试试这个练习 ↗');
   await click(page, '我想试试 ↗');
   await click(page, '下一步 →');
   await click(page, '开始计时');
-  await expect(page.locator('#timer-value')).toHaveText('00:29');
+  await expect(page.locator('#timer-value')).toHaveText('00:59');
   await click(page, '暂停计时');
   const paused = await page.locator('#timer-value').textContent();
   await page.waitForTimeout(1100);
   await expect(page.locator('#timer-value')).toHaveText(paused!);
   await click(page, '重置');
-  await expect(page.locator('#timer-value')).toHaveText('00:30');
+  await expect(page.locator('#timer-value')).toHaveText('01:00');
   await click(page, '下一步 →');
   await click(page, '完成，去复盘 →');
   await page.locator('#intensity').fill('6');
@@ -65,32 +65,32 @@ test('first-use explanation is remembered in the same browser', async ({ page })
   await expect(page.getByRole('heading', { name: '随心聊，慢慢说' })).toBeVisible();
 });
 
-for (const id of ['thought', 'plan']) {
-  test(`${id} preserves previous answers, validates choices and saves feedback`, async ({ page }) => {
+for (const id of ['describe-facts', 'participate-activity']) {
+  test(`${id} preserves previous answers and selections and saves feedback`, async ({ page }) => {
     await page.locator('nav [data-view="exercises"]').click();
     await page.locator(`[data-exercise="${id}"]`).click();
     await page.locator('#intensity').fill('3');
     await click(page, '我想试试 ↗');
-    if (id === 'plan') {
-      await click(page, '下一步 →');
-      await expect(page.locator('#dialog-title')).toContainText('选一个');
-      await click(page, '整理明天的考试用品');
+    if (id === 'participate-activity') {
+      await click(page, '洗碗');
     } else await page.locator('#answer').fill('我担心一次考试决定全部。');
     await click(page, '下一步 →');
     await page.locator('#answer').fill('我也有做得不错的时候。');
     await click(page, '上一步');
-    if (id === 'thought') await expect(page.locator('#answer')).toHaveValue('我担心一次考试决定全部。');
+    if (id === 'describe-facts') await expect(page.locator('#answer')).toHaveValue('我担心一次考试决定全部。');
     else await expect(page.locator('[data-choice].selected')).toHaveCount(1);
     await click(page, '下一步 →');
     await expect(page.locator('#answer')).toHaveValue('我也有做得不错的时候。');
-    await click(page, '下一步 →');
-    await page.locator('#answer').fill('我可以先做一点准备。');
+    if (id === 'describe-facts') {
+      await click(page, '下一步 →');
+      await page.locator('#answer').fill('我可以先做一点准备。');
+    }
     await click(page, '完成，去复盘 →');
     await click(page, '暂时没感觉');
     await click(page, '保存这一步 ✓');
     await click(page, '回到空间');
-    await click(page, '想法整理');
-    await expect(page.locator('.exercise-card')).toHaveCount(1);
+    await click(page, id === 'describe-facts' ? '描述' : '参与');
+    await expect(page.locator('.exercise-card')).toHaveCount(id === 'describe-facts' ? 5 : 6);
     await recordsView(page);
     await expect(page.locator('.full-record').first()).toContainText('暂时没感觉');
     await expect(page.locator('.full-record').first()).toContainText('我也有做得不错的时候。');
@@ -104,14 +104,14 @@ test('support interrupts check-in, exercise answers and reflection without savin
   await expect(page.locator('#dialog-title')).toHaveText('你可以寻求身边的帮助');
   await expect(page.locator('#dialog a[href="tel:120"]')).toHaveCount(1);
   await click(page, '关闭帮助页');
-  await page.locator('[data-exercise="thought"]').click();
+  await page.locator('[data-exercise="describe-facts"]').click();
   await page.locator('#intensity').fill('3');
   await click(page, '我想试试 ↗');
   await page.locator('#answer').fill('想伤害自己');
   await click(page, '下一步 →');
   await expect(page.locator('#dialog-title')).toHaveText('你可以寻求身边的帮助');
   await click(page, '关闭帮助页');
-  await page.locator('[data-exercise="ground"]').click();
+  await page.locator('[data-exercise="observe-body"]').click();
   await click(page, '我想试试 ↗');
   await click(page, '下一步 →');
   await click(page, '下一步 →');
@@ -163,17 +163,17 @@ test('legacy import is explicit, ignores invalid entries and removes the browser
 test('responsive layout, modal keyboard dismissal and timer cleanup', async ({ page }, testInfo) => {
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await page.screenshot({ path: testInfo.outputPath('home.png'), fullPage: true });
-  await page.locator('[data-exercise="ground"]').click();
+  await page.locator('[data-exercise="observe-body"]').click();
   await click(page, '我想试试 ↗');
   await click(page, '下一步 →');
   await click(page, '开始计时');
   await page.keyboard.press('Escape');
   await expect(page.locator('#dialog')).toHaveCount(0);
   await page.waitForTimeout(1100);
-  await page.locator('[data-exercise="ground"]').click();
+  await page.locator('[data-exercise="observe-body"]').click();
   await click(page, '我想试试 ↗');
   await click(page, '下一步 →');
-  await expect(page.locator('#timer-value')).toHaveText('00:30');
+  await expect(page.locator('#timer-value')).toHaveText('01:00');
   await expect(page.getByRole('button', { name: '开始计时', exact: true })).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath('practice.png'), fullPage: true });
   expect(await page.locator('#dialog').evaluate(el => el.getBoundingClientRect().width < window.innerWidth)).toBe(true);
