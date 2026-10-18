@@ -90,7 +90,7 @@ for (const id of ['describe-facts', 'participate-activity']) {
     await click(page, '保存这一步 ✓');
     await click(page, '回到空间');
     await click(page, id === 'describe-facts' ? '描述' : '参与');
-    await expect(page.locator('.exercise-card')).toHaveCount(id === 'describe-facts' ? 5 : 6);
+    await expect(page.locator('.exercise-card')).toHaveCount(id === 'describe-facts' ? 6 : 7);
     await recordsView(page);
     await expect(page.locator('.full-record').first()).toContainText('暂时没感觉');
     await expect(page.locator('.full-record').first()).toContainText('我也有做得不错的时候。');

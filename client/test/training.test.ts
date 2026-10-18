@@ -13,12 +13,21 @@ const expected = {
   '描述': ['区分事实和解读', '用描述句式改写', '身体感受扫描', '换个情境再试一次', '描述 · 今天的小练习'],
 };
 
-test('all 23 worksheet practices replace the placeholders in four ordered categories', () => {
+test('four standalone guides precede all 23 practices in their own categories', () => {
   assert.deepEqual(exerciseCategories, Object.keys(expected));
-  assert.equal(exercises.length, 23);
-  assert.equal(new Set(exercises.map(item => item.id)).size, 23);
+  assert.equal(exercises.length, 27);
+  assert.equal(new Set(exercises.map(item => item.id)).size, 27);
+  assert.equal(exercises.filter(item => item.kind === 'practice').length, 23);
+  assert.equal(exercises.filter(item => item.kind === 'guide').length, 4);
   for (const [category, titles] of Object.entries(expected)) {
-    assert.deepEqual(exercises.filter(item => item.category === category).map(item => item.title), titles);
+    const modules = exercises.filter(item => item.category === category);
+    assert.equal(modules[0].kind, 'guide');
+    assert.equal(modules[0].title, `${category} · 技能讲解`);
+    assert.deepEqual(modules.filter(item => item.kind === 'practice').map(item => item.title), titles);
+    const guide = modules[0].guide!;
+    assert.equal(modules[0].steps[0].intro, guide.explanation);
+    assert.deepEqual(modules[0].steps[1].examples, guide.examples);
+    assert.deepEqual(modules[0].steps[2].examples, guide.methods);
   }
   for (const id of ['ground', 'thought', 'plan', '__proto__']) assert.equal(isExerciseId(id), false);
   for (const exercise of exercises) {

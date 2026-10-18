@@ -18,8 +18,7 @@ type Props = {
 
 /** Executes any registered module; navigation and storage belong to the host. */
 export function TrainingSession({ exerciseId, initialIntensity = 5, inline = false, onClose, onHandoff, onSave, onRecords }: Props) {
-  const [selectedId, setSelectedId] = useState(exerciseId);
-  const exercise = getExercise(selectedId);
+  const exercise = getExercise(exerciseId);
   const [phase, setPhase] = useState<'intro' | 'practice' | 'review' | 'complete'>('intro');
   const [intensity, setIntensity] = useState(initialIntensity);
   const [before, setBefore] = useState(initialIntensity);
@@ -57,16 +56,15 @@ export function TrainingSession({ exerciseId, initialIntensity = 5, inline = fal
   let title = exercise.title;
   let body: ReactNode;
   let actions: ReactNode;
-  const needsStabilization = exercise.maxIntensity !== undefined && intensity > exercise.maxIntensity;
   if (phase === 'intro') {
-    body = <><p className="intro">{exercise.description}你可以随时退出，感到不舒服时就停下来。</p>{guide && <details className="skill-guide" open><summary>{guide.title}</summary><p>{guide.explanation}</p><ul>{guide.examples.map(item => <li key={item}>{item}</li>)}</ul><h4>可以试试的方法</h4><ul>{guide.methods.map(item => <li key={item}>{item}</li>)}</ul></details>}<Intensity id={inline ? 'chat-intensity' : 'intensity'} value={intensity} onChange={setIntensity} label={guide ? `练习前的${guide.metric}` : undefined} />{guide && <p className="modal-hint">从轻到重：{guide.levels.join(' · ')}</p>}<p className="modal-hint">困扰强度仅用于自我观察，不代表诊断。需要现实支持时，可以随时打开帮助。</p>{needsStabilization && <p className="intro">现在可以先放下分析和计划，试着稳一稳。等你感觉准备好了，再回来也可以。</p>}</>;
-    actions = <><button className="secondary" onClick={onHandoff}>我需要帮助</button><button className="primary" onClick={() => { if (needsStabilization) setSelectedId('observe-body'); else { setBefore(intensity); setPhase('practice'); } }}>{needsStabilization ? '先试试稳定练习' : '我想试试 ↗'}</button></>;
+    body = <><p className="intro">{exercise.description}你可以随时退出，感到不舒服时就停下来。</p><Intensity id={inline ? 'chat-intensity' : 'intensity'} value={intensity} onChange={setIntensity} label={guide ? `练习前的${guide.metric}` : undefined} />{guide && <p className="modal-hint">从轻到重：{guide.levels.join(' · ')}</p>}<p className="modal-hint">困扰强度仅用于自我观察，不代表诊断。需要现实支持时，可以随时打开帮助。</p></>;
+    actions = <><button className="secondary" onClick={onHandoff}>我需要帮助</button><button className="primary" onClick={() => { setBefore(intensity); setPhase('practice'); }}>我想试试 ↗</button></>;
   } else if (phase === 'practice') {
     title = step.title;
     body = <><div className="progress-track"><i style={{ width: ((stepIndex + 1) / (exercise.steps.length + 1) * 100) + '%' }} /></div><p className="intro">{step.intro}</p>
       {step.prompt && <div className="practice-prompt">{step.prompt}</div>}
       {step.examples && <ul className="practice-examples">{step.examples.map(item => <li key={item}>{item}</li>)}</ul>}
-      {step.timer && <PracticeTimer id={inline ? 'chat-timer-value' : 'timer-value'} key={`${selectedId}-${stepIndex}`} durationSeconds={step.durationSeconds} breathing={step.breathing} />}
+      {step.timer && <PracticeTimer id={inline ? 'chat-timer-value' : 'timer-value'} key={`${exerciseId}-${stepIndex}`} durationSeconds={step.durationSeconds} breathing={step.breathing} />}
       {step.counter && <div className="practice-counter"><p>{step.counter}</p><output aria-live="polite" aria-label="计数">{Number(answers[stepIndex]?.count || 0)}</output><button className="primary" aria-label="增加一次" onClick={() => answer('count', Number(answers[stepIndex]?.count || 0) + 1)}>+</button><button className="text-button" onClick={() => answer('count', 0)}>清零计数</button></div>}
       {step.fields?.map((field, index) => {
         const value = answers[stepIndex]?.[field.id];

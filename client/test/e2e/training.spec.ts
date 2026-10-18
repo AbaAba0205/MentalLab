@@ -10,24 +10,33 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('all four filters expose the complete worksheet catalog without placeholders', async ({ page }) => {
-  await expect(page.locator('.exercise-card')).toHaveCount(23);
-  for (const [category, count] of [['参与', 6], ['观察', 6], ['智慧心', 6], ['描述', 5]] as const) {
+  await expect(page.locator('.exercise-card')).toHaveCount(27);
+  for (const [category, count] of [['参与', 7], ['观察', 7], ['智慧心', 7], ['描述', 6]] as const) {
     await page.getByRole('button', { name: category, exact: true }).click();
     await expect(page.locator('.exercise-card')).toHaveCount(count);
     await expect(page.locator('.exercise-card .category')).toHaveText(Array(count).fill(category));
+    await expect(page.locator('.exercise-card').first()).toContainText(`${category} · 技能讲解`);
   }
 });
 
 for (const exercise of exercises) {
-  test(`${exercise.id}: worksheet fields, selections, counters and reflections save and reload`, async ({ page }) => {
+  test(`${exercise.id}: selected content opens at high and default intensity, saves and reloads`, async ({ page }) => {
     const errors: string[] = [];
     page.on('pageerror', error => errors.push(error.message));
     await page.locator(`[data-exercise="${exercise.id}"]`).click();
-    await expect(page.locator('.skill-guide')).toContainText(exercise.guide!.explanation);
-    await page.locator('#intensity').fill('3');
+    await page.locator('#intensity').fill('10');
+    await page.getByRole('button', { name: '我想试试 ↗', exact: true }).click();
+    await expect(page.locator('#dialog-title')).toHaveText(exercise.steps[0].title);
+    await expect(page.locator('.modal-label')).toContainText(exercise.title);
+    await page.getByRole('button', { name: '关闭', exact: true }).click();
+    await page.locator(`[data-exercise="${exercise.id}"]`).click();
+    await expect(page.locator('#intensity')).toHaveValue('5');
+    await expect(page.locator('#dialog')).not.toContainText(exercise.guide!.explanation);
     await page.getByRole('button', { name: '我想试试 ↗', exact: true }).click();
     for (const [index, step] of exercise.steps.entries()) {
       await expect(page.locator('#dialog-title')).toHaveText(step.title);
+      await expect(page.locator('#dialog .intro')).toHaveText(step.intro);
+      if (step.examples) await expect(page.locator('.practice-examples li')).toHaveText(step.examples);
       for (const [fieldIndex, field] of (step.fields || []).entries()) {
         if (field.choices) {
           const group = page.getByRole('group', { name: field.label, exact: true });
@@ -51,7 +60,7 @@ for (const exercise of exercises) {
       }
       await page.getByRole('button', { name: index === exercise.steps.length - 1 ? '完成，去复盘 →' : '下一步 →', exact: true }).click();
     }
-    await page.locator('#intensity').fill('5');
+    await page.locator('#intensity').fill('7');
     await page.locator('#reflection').fill('这次感受没有下降，也可以记录。');
     await page.locator('#useful').fill('我发现了一个有用的方法。');
     await page.getByRole('button', { name: '保存这一步 ✓', exact: true }).click();
@@ -68,7 +77,7 @@ for (const exercise of exercises) {
     await page.reload();
     await page.locator('nav [data-view="records"]').click();
     await expect(page.locator('.full-record')).toContainText(exercise.title);
-    await expect(page.locator('.record-end')).toContainText('3 → 5');
+    await expect(page.locator('.record-end')).toContainText('5 → 7');
     expect(errors).toEqual([]);
   });
 }

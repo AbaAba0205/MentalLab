@@ -36,7 +36,7 @@ test('companion is the default home and courses have an honest reserved entry', 
   await expect(page.locator('.course-card').first()).toContainText('筹备中');
   await page.screenshot({ path: testInfo.outputPath('courses.png'), fullPage: true });
   await click(page, '去练习室 ↗');
-  await expect(page.locator('.exercise-card')).toHaveCount(23);
+  await expect(page.locator('.exercise-card')).toHaveCount(27);
   await page.reload();
   await expect(page.getByRole('heading', { name: '随心聊，慢慢说' })).toBeVisible();
 });
@@ -322,15 +322,14 @@ test('clear requires confirmation, user markup stays literal and mobile controls
   }
 });
 
-test('training library redirects high intensity to stabilization before analysis', async ({ page }) => {
+test('a directly selected training keeps its own content at high intensity', async ({ page }) => {
   await navigate(page, 'exercises');
   await page.locator('[data-exercise="describe-facts"]').click();
   await page.locator('#intensity').fill('8');
-  await expect(page.getByRole('button', { name: '我想试试 ↗' })).toHaveCount(0);
-  await click(page, '先试试稳定练习');
-  await expect(page.locator('#dialog-title')).toHaveText('身体感觉观察');
   await click(page, '我想试试 ↗');
-  await expect(page.locator('#dialog-title')).toHaveText('注意此刻的身体');
+  await expect(page.locator('#dialog-title')).toHaveText('事实：像摄像头一样记录');
+  await expect(page.locator('#answer')).toBeVisible();
+  await expect(page.locator('.modal-label')).toContainText('区分事实和解读');
 });
 
 

@@ -51,15 +51,24 @@ const bodyFields = (describe = false) => [
 const breath: ExerciseStep = { title: '呼吸 + 身体安静下来', intro: '跟着提示按舒服的节奏呼吸 1 分钟。吸气时圆圈变大，呼气时变小。把手放在肚子上，留意吸气时腹部鼓起、呼气时腹部落下。想法让它飘过，不追。', prompt: '在心里轻声问：“我内心深处知道什么是对的？”然后等一等，不用硬想。暂时没有答案也可以。', timer: true, durationSeconds: 60, breathing: true };
 const settings = { '参与': ['sun', 'peach'], '观察': ['cloud', 'mint'], '智慧心': ['flower', 'lavender'], '描述': ['book', 'mint'] };
 function module<const Id extends string>(id: Id, category: Category, title: string, subtitle: string, time: string, steps: ExerciseStep[], stable = false): TrainingModule & { id: Id; guide: SkillGuide } {
-  return { id, category, title, subtitle, time, icon: settings[category][0], color: settings[category][1], description: subtitle + '。', guide: skillGuides[category],
+  return { id, kind: 'practice', category, title, subtitle, time, icon: settings[category][0], color: settings[category][1], description: subtitle + '。', guide: skillGuides[category],
     useWhen: stable ? '用户愿意时，温和观察当下身体感觉，不要求分析或决定' : `用户情绪平稳、自评困扰不高于 3 分且愿意练习${category}时`,
     ...(stable ? {} : { maxIntensity: 3 }), steps };
+}
+function lesson<const Id extends string>(id: Id, category: Category) {
+  const guide = skillGuides[category];
+  return { ...module(id, category, `${category} · 技能讲解`, `认识${category}的含义、例子和练习方法`, '3 分钟', [
+    { title: guide.title, intro: guide.explanation, prompt: '可以慢慢读，按自己的节奏了解这个技能。' },
+    { title: `${category}：看看这些例子`, intro: '通过这些例子，看看这个技能在日常生活中是什么样的。', examples: guide.examples },
+    { title: `${category}：可以试试的方法`, intro: '从下面的方法中，选一个你觉得容易上手的。阅读后，可以到同一分类里选一个小练习。', examples: guide.methods },
+  ], true), kind: 'guide' as const, useWhen: `用户希望了解${category}技能的含义和方法时，可阅读这份独立讲解` };
 }
 function daily(category: Category, moments: string[]): ExerciseStep[] {
   return moments.map((moment, i) => ({ title: ['早上的 1 分钟', '中午的 1 分钟', '晚上的 1 分钟'][i], intro: moment, prompt: `${category}：一天 3 次，每次 1 分钟。在相应的时刻尝试，也可以先写下今天的安排。`, timer: true, durationSeconds: 60, fields: [text('note', '这一次的体验或安排', '准备什么时候练？注意到了什么？')] }));
 }
 
 export const dbtModules = [
+  lesson('participate-guide', '参与'),
   module('participate-activity', '参与', '选一件你要做的事', '可以从任何日常小事开始', '2 分钟', [
     { title: '选一件你要做的事', intro: '选一件你马上要做的事，或写一件自己的。不用挑特别的事，越普通越好。', fields: activityFields },
     { title: '一心一用，去做这件事', intro: '只做你选的那件事，不评判“我做得好不好”。', prompt: '发现走神了，不生气，轻轻回到正在做的事。', fields: [text('note', '你想怎么投入这件事？')] },
@@ -78,6 +87,7 @@ export const dbtModules = [
     { title: '沉浸程度打分', intro: '回想刚才做一件事的体验，选出你的沉浸程度。', fields: [choice('rating', '你的沉浸程度', ['完全没投入', '有点投入', '还行', '比较投入', '完全沉浸']), choice('obstacles', '什么让你最难投入？（多选）', ['脑子里停不下来', '担心别人的看法', '觉得这件事无聊', '手机在旁边', '身体不舒服', '情绪太强烈', '其他想法不断冒出来'], true), text('next', '下次想试试什么方法让自己更投入？', '例如：把手机放远一点 / 做之前深呼吸三次……')] },
   ]),
   module('participate-daily', '参与', '参与 · 今天的小练习', '一天 3 次，每次 1 分钟', '3 × 1 分钟', daily('参与', ['刷牙的时候，只管刷牙。', '吃午饭的时候，只管吃饭。', '洗澡的时候，只管洗澡。'])),
+  lesson('observe-guide', '观察'),
   module('observe-clouds', '观察', '想法云朵练习', '把想法当成天上飘过的云，只看不追', '3 分钟', [
     { title: '想法像云一样飘过', intro: '想象坐在草地上抬头看天空。这些想法像云一样飘过。每朵云经过时默念：“我注意到一个想法飘过来了。”只看，不追、不赶。', examples: ['我完蛋了', '他是不是讨厌我', '明天的事怎么办', '我怎么什么都做不好', '上次那件事好丢人', '好累，不想动了', '大家都在看我'], prompt: '云会自己飘走。你只需要看，不用做任何事。' },
     { title: '哪朵云你想追 / 想赶走？', intro: '写下刚才最吸引你注意的“想法云”。', prompt: '发现自己反复想某个想法时，对自己说：“我注意到我又在追这朵云了。”然后回到天空，看下一朵。', fields: [text('cloud', '最吸引我的想法云')] },
@@ -97,6 +107,7 @@ export const dbtModules = [
     { title: '“注意到”计数器', intro: '设 2 分钟。每当注意力碰到一个想法、感觉、声音、情绪，就点“+”，心里说“注意到了”，然后让它走。', prompt: '每次“注意到”都是一次成功。是在数你回来了多少次，不需要追求某个数字。', timer: true, durationSeconds: 120, counter: '我注意到了……让它走', fields: [choice('types', '你注意到了哪些类型？（多选）', ['身体感觉', '想法', '情绪', '声音', '画面', '冲动', '味道 / 气味'], true), text('hardest', '最难让它走的是哪个？', '写下最难“放手”的那个……')] },
   ]),
   module('observe-daily', '观察', '观察 · 今天的小练习', '一天 3 次，每次 1 分钟', '3 × 1 分钟', daily('观察', ['刷牙时，观察嘴里泡沫的感觉。', '走路时，观察脚踩地的感觉。', '睡前，观察呼吸的一进一出。'])),
+  lesson('wise-guide', '智慧心'),
   module('wise-decision', '智慧心', '你现在需要做一个什么决定？', '先把纠结的事情写下来', '3 分钟', [
     { title: '写下你纠结的决定', intro: '想一个现在让你有点为难、不大不小的决定，先写下来，再列出两个选择。', fields: decisionFields },
   ]),
@@ -117,6 +128,7 @@ export const dbtModules = [
   module('wise-quick', '智慧心', '30 秒智慧心速查', '日常小事也可以用', '30 秒', [
     { title: '30 秒智慧心速查', intro: '跟着呼吸 30 秒，然后问问自己。', examples: ['深呼吸 3 次，把手放在肚子上。', '轻声问：“我内心知道什么是对的？”', '等答案浮现，不硬想。有了之后，选择自己愿意做的一小步。'], timer: true, durationSeconds: 30, breathing: true, fields: [text('wisdom', '此刻浮现的答案（可以留空）')] },
   ]),
+  lesson('describe-guide', '描述'),
   module('describe-facts', '描述', '区分事实和解读', '像摄像头一样看事情', '3 分钟', [
     { title: '事实：像摄像头一样记录', intro: '想一个最近让你难受的情境。先写只有你能看到、听到的事实。', fields: [text('fact', '事实（像摄像头一样记录）', '例如：老师看了我一眼，没有说话……')] },
     { title: '解读：脑子加的故事', intro: '再写脑子自动给事实加的故事和猜测。', fields: [text('interpretation', '解读（你的脑子自动加的故事）', '例如：老师讨厌我，我肯定要挂了……')] },

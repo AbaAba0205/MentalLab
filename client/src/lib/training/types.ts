@@ -33,6 +33,7 @@ export interface SkillGuide {
 
 export interface TrainingModule {
   id: string;
+  kind: 'guide' | 'practice';
   title: string;
   subtitle: string;
   category: string;
@@ -42,7 +43,7 @@ export interface TrainingModule {
   description: string;
   /** Used by the companion to select only registered, reviewed exercises. */
   useWhen: string;
-  /** Above this self-rated intensity, offer stabilization before this module. */
+  /** Limits AI recommendations; directly selected modules keep their own content. */
   maxIntensity?: number;
   guide?: SkillGuide;
   steps: ExerciseStep[];

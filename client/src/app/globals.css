@@ -513,9 +513,7 @@ input[type=range] { accent-color: #3b765b; min-height: 32px; }
 }
 
 /* Worksheet controls use the existing practice palette. */
-.skill-guide { margin: 20px 0; padding: 16px; border: 1px solid #cbdacb; border-radius: 14px; line-height: 1.9; }
-.skill-guide summary { cursor: pointer; font-weight: 600; }
-.skill-guide ul, .practice-examples { padding-left: 22px; line-height: 1.9; }
+.practice-examples { padding-left: 22px; line-height: 1.9; }
 .practice-field { border: 0; padding: 0; min-width: 0; margin: 20px 0; }
 .practice-counter { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 14px; margin: 24px 0; }
 .practice-counter p { flex-basis: 100%; text-align: center; }
