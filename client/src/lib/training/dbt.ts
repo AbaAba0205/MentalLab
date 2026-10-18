@@ -158,6 +158,8 @@ export function serializePractice(steps: ExerciseStep[], answers: StepAnswer[]):
       return content ? [`${field.label}：${content}`] : [];
     });
     if (step.counter) lines.push(`${step.counter}：${values.count ?? 0} 次`);
+    if (Array.isArray(values.noticedClouds) && values.noticedClouds.length) lines.push(`注意到的想法云：${values.noticedClouds.join('、')}`);
+    if (values.completed === '已完成') lines.push('日常练习：已完成');
     return lines.length ? [`${step.title}\n${lines.join('\n')}`] : [];
   }).join('\n\n');
 }

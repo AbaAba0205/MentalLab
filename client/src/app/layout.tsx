@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
+import './practice.css';
 
 export const metadata: Metadata = {
   title: '心晴 · 给情绪一个停靠的地方',

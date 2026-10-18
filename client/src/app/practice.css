@@ -1,0 +1,373 @@
+/* The worksheet scenes share a quiet palette; each activity has its own composition. */
+.experience-theme { --scene-ink: #35677c; --scene-soft: #eaf4f8; --scene-mid: #c7e0ea; --scene-accent: #6e9fb1; --scene-paper: #fffefa; }
+.theme-apricot { --scene-ink: #86543b; --scene-soft: #fcf0e5; --scene-mid: #eed5bf; --scene-accent: #c88f67; }
+.theme-iris { --scene-ink: #655483; --scene-soft: #f1edf9; --scene-mid: #ded4ee; --scene-accent: #a08abb; }
+.theme-sage { --scene-ink: #426952; --scene-soft: #edf4eb; --scene-mid: #cfdfca; --scene-accent: #8ba88d; }
+dialog.training-dialog { width: min(810px, calc(100% - 32px)); max-height: 92dvh; border: 1px solid #fff; border-radius: 26px; background: #fffefa; }
+.training-dialog .modal { padding: 30px 38px; }
+.training-dialog .modal-top { margin-bottom: 16px; }
+.training-dialog .modal-label { color: var(--scene-ink); font-size: 10px; letter-spacing: 1.4px; }
+.training-dialog .modal h2 { color: #2d493f; font-weight: 600; font-size: 25px; letter-spacing: -.5px; }
+.training-dialog .modal .intro { color: #64726a; font-size: 13px; line-height: 1.9; margin: 14px 0 22px; }
+.training-dialog .modal-actions { background: linear-gradient(180deg, #fffefa00, #fffefa 24%); margin-top: 24px; padding-block: 14px 2px; }
+.experience-theme .progress-track { height: 3px; margin: 18px 0; background: var(--scene-soft); }
+.experience-theme .progress-track i { background: var(--scene-accent); }
+.experience-cover { position: relative; overflow: hidden; min-height: 154px; margin: 24px 0; border: 1px solid var(--scene-mid); border-radius: 20px; background: var(--scene-soft); color: var(--scene-ink); }
+.practice-landscape { display: block; width: 100%; height: auto; color: var(--scene-ink); }
+.experience-cover .practice-landscape { position: absolute; width: 100%; height: 100%; object-fit: cover; opacity: .75; }
+.cover-caption { position: relative; display: grid; gap: 10px; padding: 27px; }
+.cover-caption > span, .experience-kicker { font-size: 10px; letter-spacing: 1.8px; color: var(--scene-ink); }
+.cover-caption strong { font-size: 20px; font-weight: 500; letter-spacing: .5px; }
+.cover-caption small { font-size: 11px; opacity: .8; }
+.experience-checkin { padding: 0 22px 20px; border: 1px solid #e5e8dc; border-radius: 16px; background: #fafbf6; }
+.experience-checkin .modal-hint { margin-top: 14px; }
+.exercise-scene { container: practice / inline-size; min-width: 0; color: var(--scene-ink); }
+.exercise-scene *, .experience-cover * { min-width: 0; }
+.exercise-scene p { overflow-wrap: anywhere; }
+.experience-theme .experience-tip { padding: 14px 18px; background: var(--scene-soft); border: 0; border-left: 3px solid var(--scene-mid); border-radius: 0 12px 12px 0; color: var(--scene-ink); font-size: 12px; line-height: 1.9; }
+.experience-writing { position: relative; margin: 22px 0 0; }
+.experience-theme .experience-writing .field-label, .experience-field > legend { font-size: 12px; font-weight: 500; color: var(--scene-ink); margin: 0 0 10px; }
+.experience-writing .field-label > span { font-size: 10px; font-weight: 400; opacity: .7; }
+.experience-writing textarea { display: block; border: 1px solid var(--scene-mid); background: #fffefa; border-radius: 12px; min-height: 90px; padding: 14px; color: #3a5149; font-size: 13px; }
+.experience-writing textarea:focus { outline: 2px solid var(--scene-accent); outline-offset: 2px; }
+.experience-writing > svg { width: 24px; height: 24px; margin-bottom: 10px; }
+.experience-field { margin: 20px 0 0; }
+.experience-field .choice-grid { margin: 12px 0 0; gap: 9px; }
+.experience-field .choice { display: flex; align-items: center; gap: 10px; position: relative; min-height: 46px; padding: 13px 15px; color: var(--scene-ink); background: #fffefa; border: 1px solid var(--scene-mid); border-radius: 13px; font-size: 12px; }
+.experience-field .choice.selected { border-color: var(--scene-accent); background: var(--scene-soft); box-shadow: inset 0 0 0 1px var(--scene-accent); }
+.experience-field .choice > svg { width: 23px; height: 23px; flex: none; }
+.experience-field .choice .selection-check { width: 15px; height: 15px; margin-left: auto; }
+.experience-examples { list-style: none; padding: 0; margin: 20px 0 0; display: grid; gap: 12px; }
+.experience-examples > li { padding: 16px 18px; border: 1px solid var(--scene-mid); border-radius: 13px; background: #fffefa; color: var(--scene-ink); font-size: 12px; line-height: 1.9; }
+.scene-caption { display: block; color: var(--scene-ink); opacity: .8; text-align: center; font-size: 11px; line-height: 1.8; margin: 16px 0 0; }
+.studio-heading, .focus-caption, .wave-caption, .body-journal-heading { display: flex; justify-content: center; align-items: center; gap: 10px; font-size: 12px; margin-bottom: 20px; }
+.studio-heading > svg, .focus-caption > svg, .wave-caption > svg, .body-journal-heading > svg { width: 22px; height: 22px; }
+.scene-button { border: 1px solid var(--scene-mid); border-radius: 30px; background: #fffffff2; color: var(--scene-ink); padding: 12px 22px; font-size: 12px; min-height: 44px; }
+
+/* Small activities and five sensory notebook pages. */
+.activity-studio { background: var(--scene-soft); border: 1px solid var(--scene-mid); padding: 24px; border-radius: 20px; }
+.activity-picker .choice-grid { grid-template-columns: repeat(3, 1fr); }
+.activity-picker .choice { display: flex; flex-direction: column; justify-content: center; min-height: 116px; gap: 15px; text-align: center; background: #ffffffa8; }
+.activity-picker .choice > svg { width: 32px; height: 32px; }
+.activity-picker .choice .selection-check { position: absolute; top: 9px; right: 9px; width: 16px; height: 16px; }
+.custom-activity textarea { min-height: 62px; }
+.intention-card { display: flex; flex-direction: column; align-items: center; gap: 15px; padding: 36px 20px; background: var(--scene-soft); border: 1px solid var(--scene-mid); border-radius: 20px; }
+.intention-card > svg { width: 56px; height: 56px; margin-bottom: 8px; }
+.intention-card span, .intention-card small { font-size: 11px; }
+.intention-card strong { font-size: 24px; font-weight: 500; text-align: center; overflow-wrap: anywhere; }
+.senses-notebook { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.sense-page { position: relative; border-radius: 16px; padding: 20px; border: 1px solid #d9e6eb; background: #edf5f9; --scene-ink: #3b6d82; --scene-mid: #c4dce6; }
+.sense-1 { background: #f2eef8; border-color: #ded5eb; --scene-ink: #725789; --scene-mid: #d9c9e5; }
+.sense-2 { background: #eef5e9; border-color: #d9e4cd; --scene-ink: #5a7351; --scene-mid: #cbdcbe; }
+.sense-3 { background: #fcf0e4; border-color: #ead8c4; --scene-ink: #8b6746; --scene-mid: #e9d2b9; }
+.sense-4 { grid-column: 1/-1; background: #f7eeec; border-color: #ead5d0; --scene-ink: #92645c; --scene-mid: #e4ccc6; }
+.sense-caption { display: flex; justify-content: space-between; align-items: center; }
+.sense-caption > svg { width: 29px; height: 29px; }
+.sense-caption small { font-size: 9px; letter-spacing: 2px; }
+.sense-page .experience-writing { margin-top: 16px; }
+.sense-page .experience-writing label.field-label { font-size: 17px; }
+.sense-page textarea { background: #ffffffbf; min-height: 78px; }
+.sense-footnote { display: block; margin-top: 11px; font-size: 10px; opacity: .8; }
+
+/* A sky to notice thoughts, and a body to locate sensations. */
+.cloud-sky { position: relative; isolation: isolate; overflow: hidden; min-height: 310px; border-radius: 20px; background: linear-gradient(180deg, #e7f1fa, #f3f8fb 75%, #e6eee6); border: 1px solid #d8e6ec; text-align: center; }
+.sky-caption { position: relative; display: block; font-size: 10px; letter-spacing: 3px; margin-top: 22px; color: #53778b; }
+.thought-cloud { position: relative; width: min(80%, 330px); height: 140px; margin: 15px auto 0; display: grid; place-items: center; animation: thought-float 7s ease-in-out infinite; }
+.thought-cloud > svg { position: absolute; width: 100%; height: 100%; fill: #fff; stroke: #dae7ee; stroke-width: .5; filter: drop-shadow(0 8px 8px #7eacbe12); }
+.thought-cloud > span { z-index: 1; max-width: 65%; margin-top: 16px; font-size: 17px; color: #587c91; }
+.sky-cloud { position: absolute; width: 100px; height: 30px; border-radius: 50px; background: #ffffffb3; z-index: -1; }
+.sky-cloud::before, .sky-cloud::after { content: ''; position: absolute; background: inherit; border-radius: 50%; width: 45px; height: 45px; left: 18px; top: -20px; }
+.sky-cloud::after { width: 30px; height: 30px; left: 53px; top: -12px; }
+.cloud-back-one { left: -25px; top: 100px; animation: thought-float 9s ease-in-out infinite reverse; }
+.cloud-back-two { right: -14px; top: 70px; transform: scale(.7); }
+.sky-hills { position: absolute; height: 40px; bottom: 0; left: -5%; width: 110%; border-radius: 60% 60% 0 0; background: #d9e7db; z-index: -1; }
+.sky-controls { position: relative; display: flex; align-items: center; flex-direction: column; gap: 8px; margin: 6px 0 30px; }
+.sky-controls .text-button { color: #5b7886; font-size: 10px; min-height: 28px; }
+.cloud-thought-list { display: flex; flex-wrap: wrap; gap: 7px; justify-content: center; }
+.cloud-thought-list > li { font-size: 10px; padding: 5px 12px; border: 0; background: #edf4f8; color: #5a7c90; border-radius: 20px; }
+.motion-paused *, .motion-paused *::before, .motion-paused *::after { animation-play-state: paused !important; }
+.body-studio { display: grid; grid-template-columns: 260px 1fr; gap: 28px; padding: 20px; border: 1px solid var(--scene-mid); border-radius: 20px; background: var(--scene-soft); }
+.body-field { margin: 0; }
+.body-field > legend { text-align: center; font-size: 11px; padding: 0; }
+.body-map { position: relative; width: 250px; height: 355px; margin-inline: auto; }
+.body-map > svg { position: absolute; width: 100%; height: 100%; }
+.body-point.choice { position: absolute; padding: 5px; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; width: 80px; min-height: 44px; background: transparent; color: var(--scene-ink); border: 0; font-size: 10px; overflow: visible; }
+.body-point.choice i { display: block; width: 10px; height: 10px; background: #fff; border: 2px solid var(--scene-accent); border-radius: 50%; }
+.body-point.choice span { background: #fffefad9; border-radius: 4px; padding: 2px 5px; }
+.body-point.choice.selected { background: transparent; box-shadow: none; }
+.body-point.choice.selected i { background: var(--scene-ink); border-color: var(--scene-ink); box-shadow: 0 0 0 5px #6e9fb120; }
+.body-point.choice.selected span { color: #fff; background: var(--scene-ink); }
+.body-point.choice:hover { transform: translate(-50%, -50%); }
+.body-sensations .practice-field { margin-top: 0; }
+.body-sensations .choice-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+.body-sensations .choice { justify-content: center; padding: 10px 6px; font-size: 11px; text-align: center; }
+.body-sensations .selection-check { display: none; }
+.body-note { display: flex; gap: 10px; align-items: start; padding: 18px 6px 0; font-size: 11px; line-height: 1.8; }
+.body-note > svg { width: 22px; height: 22px; flex: none; }
+.body-journal { padding: 26px; background: var(--scene-soft); border-radius: 20px; }
+.body-journal textarea { background: repeating-linear-gradient(#fffefa, #fffefa 32px, var(--scene-mid) 33px, #fffefa 34px); line-height: 34px; padding-top: 4px; border: 0; }
+
+/* Labels travel along a conveyor; an urge can be located on a wave. */
+.conveyor-scene { background: #edf4f7; padding: 24px 20px 0; border: 1px solid #d4e2e8; border-radius: 18px; overflow: hidden; }
+.parcel-line { display: flex; min-height: 125px; gap: 14px; align-items: end; padding: 16px 0 4px; flex-wrap: wrap; }
+.thought-parcel, .empty-parcel { min-width: 76px; background: #f4e8d4; color: #806849; border: 1px solid #deccae; padding: 14px; display: flex; flex-direction: column; align-items: center; gap: 9px; font-size: 11px; border-radius: 6px; transform: rotate(-3deg); }
+.thought-parcel > svg, .empty-parcel > svg { width: 23px; height: 23px; }
+.empty-parcel { margin: auto; background: #ffffff94; border: 1px dashed #b8ced8; transform: none; color: #607e8d; }
+.conveyor-belt { height: 18px; margin: 0 -20px; background: repeating-linear-gradient(90deg, #b8cdd6 0 18px, #d3e0e6 18px 22px); border-block: 3px solid #9eb7c4; }
+.tag-picker .choice-grid { grid-template-columns: repeat(2, 1fr); }
+.tag-picker .choice { border-radius: 6px 16px 16px 6px; font-size: 11px; }
+.tag-picker .choice::before { content: ''; width: 6px; height: 6px; border: 1px solid var(--scene-mid); background: #fff; border-radius: 50%; flex: none; }
+.wave-studio { border: 1px solid var(--scene-mid); border-radius: 20px; padding: 26px 22px 20px; background: linear-gradient(#f9fcfd, #eaf3f7); }
+.wave-caption { justify-content: start; margin: 0; }
+.urge-wave { display: block; width: 100%; height: auto; margin-top: 10px; }
+.wave-phases > legend { font-size: 11px; }
+.wave-phases .choice-grid { grid-template-columns: repeat(3, 1fr); }
+.wave-phases .choice { min-height: 64px; font-size: 10px; text-align: center; justify-content: center; padding: 10px; }
+.wave-phases .choice:last-child { grid-column: 1/-1; min-height: 44px; background: transparent; border-style: dashed; }
+.wave-phases .selection-check { display: none; }
+
+/* Tapping a stone is an action, not another question. */
+.attention-studio { padding: 22px; background: var(--scene-soft); border: 1px solid var(--scene-mid); border-radius: 22px; text-align: center; }
+.attention-orbit { position: relative; display: grid; place-items: center; width: 220px; height: 220px; margin: 0 auto; }
+.orbit-track { position: absolute; inset: 20px; border: 1px dashed var(--scene-accent); border-radius: 50%; opacity: .6; }
+.orbit-dot { position: absolute; left: calc(50% - 4px); top: calc(50% - 4px); width: 8px; height: 8px; background: var(--scene-accent); border-radius: 50%; transition: transform .6s; }
+.notice-stone { z-index: 1; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; width: 144px; height: 144px; border: 1px solid var(--scene-mid); border-radius: 44% 48% 43% 50%; background: #fffefa; color: var(--scene-ink); box-shadow: 0 12px 24px #3c58600a; }
+.notice-stone > svg { width: 23px; height: 23px; }
+.notice-stone output { font-size: 39px; font-weight: 400; line-height: 1; font-variant-numeric: tabular-nums; }
+.notice-stone > span { font-size: 10px; }
+.notice-stone b { font-size: 15px; margin-left: 5px; font-weight: 400; }
+.attention-studio > p { font-size: 12px; margin: 0 0 5px; }
+.attention-studio > .text-button { color: var(--scene-ink); font-size: 10px; }
+.attention-ripple { position: absolute; inset: 44px; border: 1px solid var(--scene-accent); border-radius: 50%; animation: noticed-ripple 1s ease-out forwards; pointer-events: none; }
+.attention-studio .timer-stage { margin-top: 12px; border-top: 1px solid var(--scene-mid); padding-top: 16px; }
+.attention-studio .timer-halo { width: 140px; height: 140px; margin: 14px auto 20px; }
+.attention-studio .timer-ring { width: 125px; height: 125px; }
+.attention-studio .timer-ring strong { font-size: 26px; }
+.attention-studio .halo-outer, .attention-studio .halo-inner { display: none; }
+.immersion-meter { background: var(--scene-soft); border: 1px solid var(--scene-mid); border-radius: 20px; padding: 26px 20px 20px; text-align: center; }
+.immersion-meter > svg { display: block; width: 250px; height: auto; max-width: 90%; margin: 0 auto; }
+.immersion-meter > strong { display: block; margin: 0 0 24px; font-size: 15px; font-weight: 500; }
+.rating-picker > legend { text-align: left; font-size: 11px; }
+.rating-picker .choice-grid { grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.rating-picker .choice { justify-content: center; min-height: 56px; font-size: 10px; padding: 9px 3px; border-radius: 10px; text-align: center; }
+.rating-picker .selection-check { display: none; }
+
+/* One quiet minute, including a breathing halo that follows the live timer. */
+.focus-studio { border: 1px solid var(--scene-mid); border-radius: 22px; background: radial-gradient(ellipse at 50% 37%, #fffefa, var(--scene-soft)); padding: 26px; }
+.focus-caption { margin-bottom: 0; }
+.timer-stage { text-align: center; }
+.timer-halo { position: relative; width: 268px; height: 268px; max-width: 100%; margin: 20px auto 22px; display: grid; place-items: center; }
+.halo-outer, .halo-inner { position: absolute; inset: 0; border: 1px solid var(--scene-mid); border-radius: 50%; background: var(--scene-soft); opacity: .6; transform: scale(var(--breath-scale, 1)); transition: transform 1s linear; }
+.halo-inner { inset: 17px; opacity: .7; }
+.experience-theme .timer-ring { position: relative; z-index: 1; width: 198px; height: 198px; margin: 0; border: 0; outline: 0; color: var(--scene-ink); background: #fffefac9; box-shadow: 0 10px 35px #64517505; }
+.timer-ring .timer-progress { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); pointer-events: none; }
+.timer-progress circle { fill: none; stroke: var(--scene-mid); stroke-width: 2; }
+.timer-progress circle + circle { stroke: var(--scene-accent); stroke-width: 3; stroke-linecap: round; transition: stroke-dasharray .5s linear; }
+.experience-theme .timer-ring strong { font-size: 37px; font-weight: 400; letter-spacing: 1px; line-height: 1.3; }
+.experience-theme .timer-ring small { font-size: 11px; margin-top: 12px; }
+.timer-stage .timer-controls { gap: 16px; align-items: center; }
+.timer-stage .timer-controls .secondary { min-width: 116px; background: #fffefa; color: var(--scene-ink); border-color: var(--scene-mid); }
+.timer-stage .timer-controls .text-button { font-size: 11px; color: var(--scene-ink); }
+.experience-theme .attention-studio .timer-ring { width: 125px; height: 125px; }
+.experience-theme .attention-studio .timer-ring strong { font-size: 26px; }
+.breath-reminder { display: flex; gap: 12px; justify-content: center; align-items: center; margin-top: 26px; font-size: 10px; opacity: .8; }
+.breath-reminder i { width: 3px; height: 3px; background: currentColor; border-radius: 50%; }
+.focus-cues { grid-template-columns: 1fr 1fr; margin-top: 24px; gap: 8px; }
+.focus-cues li { font-size: 10px; padding: 11px 14px; background: #fffefab3; }
+.focus-cues li:last-child:nth-child(odd) { grid-column: 1/-1; }
+.day-path { display: flex; justify-content: space-between; align-items: start; position: relative; margin: 8px auto 24px; max-width: 440px; }
+.day-path::before { content: ''; position: absolute; left: 15%; right: 15%; top: 24px; border-top: 1px dashed var(--scene-mid); }
+.day-path > div { z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; position: relative; }
+.day-path > div > span { display: grid; place-items: center; width: 48px; height: 48px; background: #fffefa; border: 1px solid var(--scene-mid); border-radius: 50%; opacity: .65; }
+.day-path > div.current > span { background: var(--scene-soft); border-color: var(--scene-accent); opacity: 1; box-shadow: 0 0 0 5px var(--scene-soft); }
+.day-path svg { width: 22px; height: 22px; }
+.day-path small { font-size: 10px; }
+.day-path > div > svg { position: absolute; top: 32px; right: -7px; width: 18px; height: 18px; padding: 2px; background: var(--scene-soft); border-radius: 50%; }
+.moment-card { position: relative; overflow: hidden; background: var(--scene-soft); border: 1px solid var(--scene-mid); border-radius: 22px; padding: 24px; text-align: center; }
+.moment-card > .practice-landscape { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: .5; pointer-events: none; }
+.moment-card .timer-stage, .moment-complete, .moment-card > span { position: relative; }
+.moment-complete { display: inline-flex; gap: 8px; align-items: center; min-height: 44px; border: 1px dashed var(--scene-accent); background: #fffefa; color: var(--scene-ink); padding: 10px 18px; border-radius: 30px; margin: 20px 0 0; font-size: 11px; }
+.moment-complete > svg { width: 18px; height: 18px; }
+.moment-complete.completed { border-style: solid; background: var(--scene-mid); }
+
+/* Decision branches, the three minds, and a real sheet of letter paper. */
+.decision-question { padding: 21px; background: var(--scene-soft); border: 1px solid var(--scene-mid); border-radius: 16px; margin-top: 0; }
+.decision-question textarea { min-height: 72px; }
+.decision-fork { width: 90%; height: 65px; margin: auto; color: var(--scene-accent); }
+.decision-fork svg { display: block; width: 100%; height: 100%; }
+.decision-options { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.decision-branch { position: relative; background: #f9ede9; border: 1px solid #e9d3cb; border-radius: 16px; padding: 20px; --scene-ink: #95685f; --scene-mid: #e0c7bf; }
+.branch-1 { background: #eaf3f8; border-color: #cee0e9; --scene-ink: #4a748a; --scene-mid: #c0d7e1; }
+.branch-mark { display: grid; place-items: center; width: 32px; height: 32px; border: 1px solid var(--scene-mid); border-radius: 50%; font-family: Georgia, serif; font-size: 18px; }
+.decision-branch .experience-writing { margin-top: 14px; }
+.decision-branch textarea { background: #ffffffb8; min-height: 90px; }
+.decision-branch > small { display: block; text-align: center; margin-top: 12px; font-size: 10px; opacity: .75; }
+.three-minds { position: relative; display: flex; justify-content: center; padding: 22px 0 30px; max-width: 400px; margin: 8px auto; isolation: isolate; }
+.mind-circle { display: flex; flex-direction: column; align-items: center; gap: 10px; justify-content: center; width: 150px; height: 150px; border-radius: 50%; border: 1px solid #debbb2; background: #f6e7e2b3; color: #a16f65; padding-right: 26px; }
+.mind-circle > svg { width: 28px; height: 28px; }
+.mind-circle span { font-size: 12px; }
+.reason-mind { margin-left: -38px; background: #deedf5b3; color: #5c839b; border-color: #bfd8e7; padding-right: 0; padding-left: 26px; }
+.wise-center { position: absolute; bottom: 7px; left: calc(50% - 38px); display: flex; flex-direction: column; gap: 5px; align-items: center; justify-content: center; width: 76px; height: 76px; background: #ece7f4; border: 1px solid #ccbfdf; color: #79648e; border-radius: 50%; z-index: 1; box-shadow: 0 0 0 5px #fffefa; }
+.wise-center svg { width: 24px; height: 24px; }
+.wise-center span { font-size: 10px; }
+.mind-pages { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.mind-page { padding: 22px; border-radius: 17px; background: #fbefec; border: 1px solid #ecd7d1; --scene-ink: #92685d; --scene-mid: #e3c9c2; }
+.reason-page { background: #edf5fa; border-color: #d4e4ec; --scene-ink: #557d92; --scene-mid: #c6dce7; }
+.mind-page > svg { width: 25px; height: 25px; }
+.mind-page .experience-writing { margin-top: 15px; }
+.mind-page textarea { background: #ffffffb3; min-height: 120px; }
+.mind-bridge { margin: 16px 0 0; text-align: center; font-size: 11px; }
+.wisdom-note { padding: 24px; background: #f2eff8; border: 1px solid #ded4e9; border-radius: 18px; }
+.wisdom-line textarea { font-family: 'KaiTi', 'STKaiti', serif; font-size: 16px; line-height: 2; background: #fffefa; }
+.action-note { border-top: 1px dashed var(--scene-mid); padding-top: 22px; }
+.letter-studio { border: 1px solid #dfd6c8; border-radius: 20px; background: #f1eae0; padding: 0 20px 20px; }
+.letter-envelope { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; padding: 18px 2px; color: #82705c; }
+.letter-envelope > svg { width: 23px; height: 23px; }
+.letter-envelope > span { font-size: 11px; }
+.letter-envelope > button { font-size: 10px; margin-left: auto; color: #82705c; }
+.friend-letter { position: relative; padding: 28px 30px; border-radius: 4px 4px 12px 12px; background: #fffdf4; border: 1px solid #e6dccb; box-shadow: 0 7px 20px #6e554014; color: #78694f; }
+.friend-letter::before { content: ''; position: absolute; left: 12px; right: 12px; top: -5px; height: 4px; border: 1px solid #e6dccb; background: #fffcf2; }
+.letter-date { text-align: right; font-size: 10px; letter-spacing: 2px; opacity: .7; }
+.letter-salutation { font-size: 17px; font-family: 'KaiTi', 'STKaiti', serif; margin: 22px 0; }
+.friend-letter .letter-line { margin-top: 22px; --scene-ink: #867254; --scene-mid: #e5d9c5; }
+.friend-letter textarea { background: repeating-linear-gradient(transparent 0 31px, #e8dfce 32px, transparent 33px); border: 0; border-radius: 0; padding: 0 4px; line-height: 33px; font-family: 'KaiTi', 'STKaiti', serif; font-size: 15px; min-height: 70px; }
+.letter-signature { display: flex; flex-direction: column; align-items: end; line-height: 1.8; font-size: 11px; margin-top: 26px; }
+.letter-signature strong { font-family: 'KaiTi', 'STKaiti', serif; font-weight: 400; font-size: 20px; }
+.letter-signature svg { width: 38px; height: 38px; color: #a2ad8b; margin-top: 10px; }
+
+/* A camera frame, a thought behind glass, and everyday scenario postcards. */
+.perspective-card { position: relative; padding: 28px; background: #edf3ec; border-radius: 18px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.perspective-card > svg { width: 40px; height: 40px; }
+.perspective-card strong { font-size: 18px; font-weight: 500; }
+.camera-corner { position: absolute; width: 20px; height: 20px; border-color: var(--scene-accent); }
+.camera-corner.tl { top: 14px; left: 14px; border-top: 1px solid; border-left: 1px solid; }
+.camera-corner.br { bottom: 14px; right: 14px; border-bottom: 1px solid; border-right: 1px solid; }
+.story-mode .perspective-card { background: #f5f0e6; color: #927448; }
+.previous-fact { padding: 14px 18px; margin: 16px 0 0; border-left: 2px solid var(--scene-mid); font-size: 11px; line-height: 1.8; white-space: pre-wrap; overflow-wrap: anywhere; }
+.perspective-switch { display: flex; width: fit-content; gap: 4px; border: 1px solid var(--scene-mid); background: var(--scene-soft); border-radius: 25px; padding: 4px; margin: 0 auto 20px; }
+.perspective-switch > button { min-height: 38px; padding: 8px 18px; border: 0; background: transparent; border-radius: 20px; color: var(--scene-ink); font-size: 11px; }
+.perspective-switch > button[aria-pressed=true] { background: #fffefa; box-shadow: 0 2px 7px #335e4910; }
+.fact-comparison { display: flex; gap: 14px; }
+.fact-comparison > div { flex: 1; padding: 24px; border: 1px solid #d2e0ce; border-radius: 16px; background: #f0f5ed; }
+.fact-comparison > div + div { border-color: #e8dcc5; background: #faf3e6; color: #8a7047; }
+.fact-comparison svg { width: 25px; height: 25px; }
+.fact-comparison small { display: block; font-size: 10px; margin: 16px 0 12px; }
+.fact-comparison p { font-size: 14px; line-height: 1.9; white-space: pre-wrap; margin: 0; }
+.glass-thought { position: relative; overflow: hidden; display: flex; align-items: center; flex-direction: column; padding: 28px 22px; margin: 22px 0; min-height: 168px; border-radius: 20px; border: 1px solid #d1e0e5; background: linear-gradient(135deg, #ebf5f5, #f8fbf9); box-shadow: inset 0 0 0 5px #ffffff80; color: #568078; text-align: center; }
+.glass-thought > p { font-size: 12px; margin: 22px 0 10px; }
+.glass-thought > strong { font-size: 18px; font-weight: 500; overflow-wrap: anywhere; max-width: 100%; white-space: pre-wrap; }
+.glass-shine { position: absolute; width: 30px; height: 220%; background: #ffffff80; transform: rotate(35deg); top: -60%; left: 14%; pointer-events: none; }
+.sentence-strips { display: grid; gap: 12px; }
+.sentence-strip { position: relative; border: 1px solid var(--scene-mid); border-radius: 15px; padding: 18px; background: #f3f7ee; margin-top: 0; }
+.strip-1 { background: #fcf0ec; --scene-ink: #936b60; --scene-mid: #ead6cd; }
+.strip-2 { background: #eef3f9; --scene-ink: #637d96; --scene-mid: #d3dfeb; }
+.sentence-strip textarea { background: #ffffff9c; min-height: 72px; }
+.scenario-picker .choice-grid { grid-template-columns: 1fr 1fr; gap: 14px; }
+.scenario-picker .choice { flex-direction: column; align-items: start; justify-content: end; min-height: 128px; padding: 20px; gap: 15px; background: linear-gradient(145deg, #f2f5e9, #fffdf5); }
+.scenario-picker .choice:nth-child(2) { background: linear-gradient(145deg, #ecf2f7, #fffefa); }
+.scenario-picker .choice:nth-child(3) { background: linear-gradient(145deg, #f9efe6, #fffefa); }
+.scenario-picker .choice:nth-child(4) { background: linear-gradient(145deg, #efecf7, #fffefa); }
+.scenario-picker .choice > svg { width: 30px; height: 30px; opacity: .75; }
+.scenario-picker .choice .selection-check { position: absolute; top: 14px; right: 14px; width: 16px; height: 16px; }
+.lesson-studio { border: 1px solid var(--scene-mid); border-radius: 20px; padding: 24px; background: var(--scene-soft); overflow: hidden; }
+.lesson-0 { padding: 0; }
+.lesson-0 > .practice-landscape { min-height: 145px; }
+.lesson-definition { display: grid; gap: 13px; padding: 12px 26px 30px; }
+.lesson-definition strong { font-size: 23px; font-weight: 500; line-height: 1.6; }
+.lesson-comparison { margin: 0; counter-reset: example; }
+.lesson-comparison li { padding: 22px; font-size: 13px; line-height: 2; background: #fffefa; }
+.method-deck { margin: 0; }
+.method-deck li { padding: 0; overflow: hidden; }
+.method-deck li > button { display: flex; align-items: center; gap: 16px; width: 100%; min-height: 80px; padding: 18px; border: 0; color: inherit; background: transparent; text-align: left; line-height: 1.8; font-size: 12px; }
+.method-number { font-family: Georgia, serif; color: var(--scene-accent); font-size: 23px; flex: none; }
+.method-deck li > button > span:last-child { margin-left: auto; font-size: 18px; }
+.method-deck li > p { padding: 0 20px 17px 60px; margin: 0; font-size: 11px; opacity: .8; }
+.inline-training .exercise-scene { margin-top: 20px; }
+.inline-training.experience-theme { color: var(--scene-ink); }
+.inline-training .experience-cover { margin-top: 18px; }
+.inline-training .friend-letter textarea { background: repeating-linear-gradient(transparent 0 31px, #e8dfce 32px, transparent 33px); border: 0; border-radius: 0; line-height: 33px; }
+
+@keyframes thought-float { 0%, 100% { transform: translateY(0) rotate(-1deg); } 50% { transform: translateY(-10px) rotate(1deg); } }
+@keyframes noticed-ripple { 0% { transform: scale(.8); opacity: .6; } 100% { transform: scale(1.55); opacity: 0; } }
+@container practice (max-width: 540px) {
+  .body-studio { grid-template-columns: 1fr; gap: 20px; }
+  .body-sensations .choice-grid { grid-template-columns: repeat(4, 1fr); }
+  .activity-picker .choice-grid { grid-template-columns: repeat(2, 1fr); }
+  .activity-picker .choice { min-height: 104px; }
+  .mind-pages { grid-template-columns: 1fr; }
+  .mind-page textarea { min-height: 90px; }
+}
+@media (max-width: 600px) {
+  dialog.training-dialog { width: calc(100% - 20px); max-height: 94dvh; border-radius: 22px; }
+  .training-dialog .modal { padding: 23px 20px; }
+  .training-dialog .modal h2 { font-size: 21px; line-height: 1.5; }
+  .training-dialog .modal-label { letter-spacing: .5px; font-size: 9px; line-height: 1.6; }
+  .training-dialog .modal .intro { font-size: 12px; }
+  .experience-cover { min-height: 140px; }
+  .cover-caption { padding: 23px; }
+  .cover-caption strong { font-size: 18px; }
+  .experience-checkin { padding-inline: 15px; }
+  .activity-studio, .focus-studio { padding: 20px 16px; }
+  .senses-notebook { gap: 10px; }
+  .sense-page { padding: 15px 12px; }
+  .sense-page textarea { min-height: 90px; padding: 10px; font-size: 12px; }
+  .sense-caption small { font-size: 8px; letter-spacing: 0; }
+  .sense-footnote { font-size: 9px; line-height: 1.8; }
+  .thought-cloud > span { font-size: 15px; }
+  .cloud-sky { min-height: 295px; }
+  .body-studio { padding: 16px 12px; }
+  .body-sensations .choice-grid { grid-template-columns: repeat(3, 1fr); }
+  .body-sensations .choice { min-height: 44px; font-size: 10px; }
+  .tag-picker .choice { padding: 12px 9px; font-size: 10px; }
+  .tag-picker .selection-check { display: none; }
+  .wave-studio { padding: 20px 14px; }
+  .wave-phases .choice { padding: 8px 4px; font-size: 9px; min-height: 72px; }
+  .attention-studio { padding: 16px; }
+  .attention-studio .timer-controls { gap: 8px; }
+  .attention-studio .timer-halo { margin-top: 20px; }
+  .timer-halo { width: 235px; height: 235px; }
+  .experience-theme .timer-ring { width: 178px; height: 178px; }
+  .attention-studio .timer-ring { width: 125px; height: 125px; }
+  .focus-cues { grid-template-columns: 1fr; }
+  .breath-reminder { gap: 8px; font-size: 9px; }
+  .moment-card { padding: 20px 12px; }
+  .decision-options { gap: 10px; }
+  .decision-branch { padding: 15px 12px; }
+  .decision-branch textarea { padding: 9px; font-size: 12px; }
+  .letter-studio { padding: 0 10px 10px; }
+  .letter-envelope { gap: 7px; padding: 15px 3px; }
+  .letter-envelope > span { font-size: 10px; }
+  .letter-envelope > button { padding: 0; font-size: 9px; }
+  .friend-letter { padding: 24px 18px; }
+  .friend-letter .letter-line { margin-top: 18px; }
+  .friend-letter textarea { min-height: 70px; font-size: 14px; }
+  .friend-letter .field-label { font-size: 11px; }
+  .fact-comparison { flex-direction: column; }
+  .fact-comparison > div { padding: 20px; }
+  .perspective-card { padding: 28px 20px; }
+  .perspective-card strong { font-size: 16px; }
+  .perspective-switch > button { padding-inline: 12px; }
+  .scenario-picker .choice-grid { gap: 10px; }
+  .scenario-picker .choice { min-height: 135px; padding: 15px 12px; font-size: 11px; }
+  .lesson-studio { padding: 17px; }
+  .lesson-0 { padding: 0; }
+  .lesson-definition { padding: 10px 21px 24px; }
+  .lesson-definition strong { font-size: 19px; }
+  .method-deck li > button { padding: 14px; gap: 12px; font-size: 11px; }
+  .lesson-comparison li { font-size: 12px; padding: 17px; }
+}
+@media (max-width: 350px) {
+  .training-dialog .modal { padding-inline: 15px; }
+  .senses-notebook { grid-template-columns: 1fr; }
+  .sense-4 { grid-column: auto; }
+  .decision-options { grid-template-columns: 1fr; }
+  .decision-fork { display: none; }
+  .decision-options { margin-top: 16px; }
+  .letter-envelope > button { margin-left: 0; width: 100%; text-align: left; }
+  .activity-studio, .focus-studio { padding-inline: 12px; }
+  .timer-halo { width: 210px; height: 210px; }
+  .body-map { width: 230px; height: 335px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .experience-theme *, .experience-theme *::before, .experience-theme *::after { animation: none !important; transition: none !important; }
+}

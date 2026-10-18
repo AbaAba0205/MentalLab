@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { exercises } from '../../src/lib/training/registry';
 import { createAccount } from './helpers';
+import { stepPresentation } from '../../src/lib/training/presentation';
 
 test.beforeEach(async ({ page }) => {
   await createAccount(page);
@@ -20,7 +21,7 @@ test('all four filters expose the complete worksheet catalog without placeholder
 });
 
 for (const exercise of exercises) {
-  test(`${exercise.id}: selected content opens at high and default intensity, saves and reloads`, async ({ page }) => {
+  test(`${exercise.id}: selected content opens at high and default intensity, saves and reloads`, async ({ page }, testInfo) => {
     const errors: string[] = [];
     page.on('pageerror', error => errors.push(error.message));
     await page.locator(`[data-exercise="${exercise.id}"]`).click();
@@ -36,7 +37,8 @@ for (const exercise of exercises) {
     for (const [index, step] of exercise.steps.entries()) {
       await expect(page.locator('#dialog-title')).toHaveText(step.title);
       await expect(page.locator('#dialog .intro')).toHaveText(step.intro);
-      if (step.examples) await expect(page.locator('.practice-examples li')).toHaveText(step.examples);
+      await expect(page.locator('[data-presentation]')).toHaveAttribute('data-presentation', stepPresentation(exercise.id, step, index));
+      if (step.examples) await expect(page.locator('.practice-examples .example-copy')).toHaveText(step.examples);
       for (const [fieldIndex, field] of (step.fields || []).entries()) {
         if (field.choices) {
           const group = page.getByRole('group', { name: field.label, exact: true });
@@ -57,6 +59,10 @@ for (const exercise of exercises) {
         await page.getByRole('button', { name: '增加一次' }).click();
         await page.getByRole('button', { name: '增加一次' }).click();
         await expect(page.getByLabel('计数', { exact: true })).toHaveText('2');
+      }
+      if (index === 0) {
+        expect(await page.locator('#dialog').evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);
+        await page.locator('#dialog').screenshot({ path: testInfo.outputPath('experience.png'), animations: 'disabled' });
       }
       await page.getByRole('button', { name: index === exercise.steps.length - 1 ? '完成，去复盘 →' : '下一步 →', exact: true }).click();
     }

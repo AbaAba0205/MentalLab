@@ -3,8 +3,8 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { moods } from '@/lib/model';
 
-export function Modal({ title, label, children, actions, onClose, dismissible = true }: {
-  title: string; label: string; children: ReactNode; actions?: ReactNode; onClose: () => void; dismissible?: boolean;
+export function Modal({ title, label, children, actions, onClose, dismissible = true, className }: {
+  title: string; label: string; children: ReactNode; actions?: ReactNode; onClose: () => void; dismissible?: boolean; className?: string;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   useEffect(() => {
@@ -12,7 +12,7 @@ export function Modal({ title, label, children, actions, onClose, dismissible = 
     dialog?.showModal();
     return () => dialog?.close();
   }, []);
-  return <dialog id="dialog" ref={ref} aria-labelledby="dialog-title" onCancel={event => { if (!dismissible) event.preventDefault(); else onClose(); }}>
+  return <dialog id="dialog" className={className} ref={ref} aria-labelledby="dialog-title" onCancel={event => { if (!dismissible) event.preventDefault(); else onClose(); }}>
     <div className="modal">
       <div className="modal-top"><span className="modal-label">{label}</span>{dismissible && <button className="close-button" aria-label="关闭" onClick={onClose}>×</button>}</div>
       <h2 id="dialog-title">{title}</h2>{children}
@@ -35,7 +35,7 @@ export function Intensity({ value, onChange, label = '此刻的困扰有多强�
   </>;
 }
 
-export function PracticeTimer({ id = 'timer-value', durationSeconds = 30, breathing = false }: { id?: string; durationSeconds?: number; breathing?: boolean }) {
+export function PracticeTimer({ id = 'timer-value', durationSeconds = 30, breathing = false, variant = 'focus' }: { id?: string; durationSeconds?: number; breathing?: boolean; variant?: 'focus' | 'breathing' | 'sunrise' }) {
   const [remaining, setRemaining] = useState(durationSeconds);
   const [running, setRunning] = useState(false);
   const [started, setStarted] = useState(false);
@@ -57,11 +57,13 @@ export function PracticeTimer({ id = 'timer-value', durationSeconds = 30, breath
     setStarted(true);
     setRunning(true);
   }
-  return <>
-    <div className={`timer-ring${breathing && running ? ' breathing' : ''}`}><strong id={id}>{String(Math.floor(remaining / 60)).padStart(2, '0')}:{String(remaining % 60).padStart(2, '0')}</strong><small>{breathing && running ? (Math.floor((durationSeconds - remaining) / 4) % 2 === 0 ? '慢慢吸气' : '慢慢呼气') : '给自己一点时间'}</small></div>
+  const elapsed = durationSeconds - remaining;
+  const scale = breathing && started && remaining ? 1 + (1 - Math.cos(elapsed / 8 * Math.PI * 2)) * .065 : 1;
+  return <div className={`timer-stage timer-${variant}`} data-running={running}>
+    <div className="timer-halo" style={{ '--breath-scale': scale } as CSSProperties}><i className="halo-outer" /><i className="halo-inner" /><div className="timer-ring"><svg className="timer-progress" viewBox="0 0 200 200" aria-hidden="true"><circle cx="100" cy="100" r="91" pathLength="100" /><circle cx="100" cy="100" r="91" pathLength="100" strokeDasharray={`${remaining / durationSeconds * 100} 100`} /></svg><strong id={id} role="timer">{String(Math.floor(remaining / 60)).padStart(2, '0')}:{String(remaining % 60).padStart(2, '0')}</strong><small>{remaining === 0 ? '这一刻，已经完成' : breathing && started ? (Math.floor(elapsed / 4) % 2 === 0 ? '慢慢吸气' : '慢慢呼气') : '给自己一点时间'}</small></div></div>
     <div className="timer-controls">
       <button className="secondary" onClick={toggle}>{running ? '暂停计时' : remaining === 0 ? '再来一次' : started ? '继续计时' : '开始计时'}</button>
       <button className="text-button" onClick={() => { setRunning(false); setStarted(false); setRemaining(durationSeconds); }}>重置</button>
     </div>
-  </>;
+  </div>;
 }

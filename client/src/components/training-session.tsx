@@ -4,7 +4,9 @@ import { useState, type ReactNode } from 'react';
 import { getExercise, type ExerciseId } from '@/lib/training/registry';
 import { serializePractice, type StepAnswer } from '@/lib/training/dbt';
 import { needsSupport, newRecord, type PracticeRecord } from '@/lib/model';
-import { Intensity, Modal, PracticeTimer } from './practice-ui';
+import { Intensity, Modal } from './practice-ui';
+import { ExerciseCover, ExerciseExperience } from './exercise-experience';
+import { categoryThemes } from '@/lib/training/presentation';
 
 type Props = {
   exerciseId: ExerciseId;
@@ -57,27 +59,13 @@ export function TrainingSession({ exerciseId, initialIntensity = 5, inline = fal
   let body: ReactNode;
   let actions: ReactNode;
   if (phase === 'intro') {
-    body = <><p className="intro">{exercise.description}你可以随时退出，感到不舒服时就停下来。</p><Intensity id={inline ? 'chat-intensity' : 'intensity'} value={intensity} onChange={setIntensity} label={guide ? `练习前的${guide.metric}` : undefined} />{guide && <p className="modal-hint">从轻到重：{guide.levels.join(' · ')}</p>}<p className="modal-hint">困扰强度仅用于自我观察，不代表诊断。需要现实支持时，可以随时打开帮助。</p></>;
+    body = <><ExerciseCover exercise={exercise} /><p className="intro">{exercise.description}你可以随时退出，感到不舒服时就停下来。</p><div className="experience-checkin"><Intensity id={inline ? 'chat-intensity' : 'intensity'} value={intensity} onChange={setIntensity} label={guide ? `练习前的${guide.metric}` : undefined} />{guide && <p className="modal-hint">从轻到重：{guide.levels.join(' · ')}</p>}</div><p className="modal-hint">困扰强度仅用于自我观察，不代表诊断。需要现实支持时，可以随时打开帮助。</p></>;
     actions = <><button className="secondary" onClick={onHandoff}>我需要帮助</button><button className="primary" onClick={() => { setBefore(intensity); setPhase('practice'); }}>我想试试 ↗</button></>;
   } else if (phase === 'practice') {
     title = step.title;
     body = <><div className="progress-track"><i style={{ width: ((stepIndex + 1) / (exercise.steps.length + 1) * 100) + '%' }} /></div><p className="intro">{step.intro}</p>
-      {step.prompt && <div className="practice-prompt">{step.prompt}</div>}
-      {step.examples && <ul className="practice-examples">{step.examples.map(item => <li key={item}>{item}</li>)}</ul>}
-      {step.timer && <PracticeTimer id={inline ? 'chat-timer-value' : 'timer-value'} key={`${exerciseId}-${stepIndex}`} durationSeconds={step.durationSeconds} breathing={step.breathing} />}
-      {step.counter && <div className="practice-counter"><p>{step.counter}</p><output aria-live="polite" aria-label="计数">{Number(answers[stepIndex]?.count || 0)}</output><button className="primary" aria-label="增加一次" onClick={() => answer('count', Number(answers[stepIndex]?.count || 0) + 1)}>+</button><button className="text-button" onClick={() => answer('count', 0)}>清零计数</button></div>}
-      {step.fields?.map((field, index) => {
-        const value = answers[stepIndex]?.[field.id];
-        const fieldId = `${inline ? 'chat-' : ''}answer${index ? `-${field.id}` : ''}`;
-        if (field.choices) return <fieldset className="practice-field" key={field.id}><legend className="field-label">{field.label}</legend><div className="choice-grid">{field.choices.map(choice => {
-          const selected = field.multiple ? Array.isArray(value) && value.includes(choice) : value === choice;
-          return <button key={choice} className={`choice ${selected ? 'selected' : ''}`} data-choice={choice} aria-pressed={selected} onClick={() => {
-            const current = Array.isArray(value) ? value : [];
-            answer(field.id, field.multiple ? (selected ? current.filter(item => item !== choice) : [...current, choice]) : (selected ? '' : choice));
-          }}>{choice}</button>;
-        })}</div></fieldset>;
-        return <div key={field.id}><label className="field-label" htmlFor={fieldId}>{field.label} <span>（选填）</span></label><textarea id={fieldId} maxLength={300} placeholder={field.placeholder} value={typeof value === 'string' ? value : ''} onChange={event => answer(field.id, event.target.value)} /></div>;
-      })}
+      <ExerciseExperience key={`${exerciseId}-${stepIndex}`} exercise={exercise} step={step} index={stepIndex} answers={answers} inline={inline} onAnswer={answer} />
+      {step.prompt && <div className="practice-prompt experience-tip">{step.prompt}</div>}
       {error && <p role="alert" className="form-error">{error}</p>}<button className="text-button" onClick={onHandoff}>我需要帮助</button></>;
     actions = <><button className="secondary" onClick={() => { setError(''); if (stepIndex === 0) onClose(); else setStepIndex(stepIndex - 1); }}>{stepIndex === 0 ? '先到这里' : '上一步'}</button><span className="step-count">{stepIndex + 1} / {exercise.steps.length}</span><button className="primary" onClick={next}>{stepIndex === exercise.steps.length - 1 ? '完成，去复盘' : '下一步'} →</button></>;
   } else if (phase === 'review') {
@@ -96,6 +84,7 @@ export function TrainingSession({ exerciseId, initialIntensity = 5, inline = fal
     actions = <><button className="secondary" onClick={onClose}>{inline ? '回到聊天' : '回到空间'}</button>{onRecords && <button className="primary" onClick={onRecords}>看看我的记录 ↗</button>}</>;
   }
   const label = '小训练 · ' + exercise.title + ' · ' + exercise.time;
-  if (inline) return <section className="inline-training" aria-label={label}><div className="modal-top"><span className="modal-label">{label}</span><button className="text-button" onClick={onClose}>暂停练习</button></div><h3 tabIndex={-1}>{title}</h3>{body}<div className="modal-actions">{actions}</div></section>;
-  return <Modal label={label} title={title} onClose={onClose} actions={actions}>{body}</Modal>;
+  const theme = 'experience-theme theme-' + categoryThemes[exercise.category];
+  if (inline) return <section className={`inline-training ${theme}`} aria-label={label}><div className="modal-top"><span className="modal-label">{label}</span><button className="text-button" onClick={onClose}>暂停练习</button></div><h3 tabIndex={-1}>{title}</h3>{body}<div className="modal-actions">{actions}</div></section>;
+  return <Modal className={`training-dialog ${theme}`} label={label} title={title} onClose={onClose} actions={actions}>{body}</Modal>;
 }

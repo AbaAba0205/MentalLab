@@ -5,6 +5,7 @@ import { exercises, exerciseCategories, getExercise, isExerciseId } from '../src
 import { serializePractice, type StepAnswer } from '../src/lib/training/dbt';
 import { newRecord, readRecords } from '../src/lib/model';
 import { restoreChatTraining, type ChatReply } from '../src/lib/chat';
+import { presentations, stepPresentation } from '../src/lib/training/presentation';
 
 const expected = {
   '参与': ['选一件你要做的事', '1 分钟沉浸体验', '五感投入检查', '走神计数器', '沉浸程度打分', '参与 · 今天的小练习'],
@@ -94,4 +95,24 @@ test('retired recommendations preserve old chat text and metadata while allowing
     assert.equal(restored.trainingState, 'saved');
     assert.equal(messages[0].result.exerciseId, id);
   }
+});
+
+test('every module and step has a deliberate presentation, including the mixed multi-step practices', () => {
+  assert.deepEqual(Object.keys(presentations).sort(), exercises.map(item => item.id).sort());
+  assert.ok(new Set(Object.values(presentations)).size >= 15);
+  assert.equal(stepPresentation('participate-immersion', getExercise('participate-immersion').steps[0], 0), 'activity');
+  assert.equal(stepPresentation('wise-minds', getExercise('wise-minds').steps[1], 1), 'breathing');
+  assert.equal(stepPresentation('wise-minds', getExercise('wise-minds').steps[2], 2), 'wisdom');
+  assert.equal(stepPresentation('describe-scenario', getExercise('describe-scenario').steps[1], 1), 'rewrite');
+});
+
+test('noticing clouds and completing everyday moments are preserved alongside journal entries', () => {
+  const clouds = serializePractice(getExercise('observe-clouds').steps, [{ noticedClouds: ['我完蛋了', '明天的事怎么办'] }, { cloud: '想法来了，也可以让它走' }]);
+  assert.match(clouds, /注意到的想法云：我完蛋了、明天的事怎么办/);
+  assert.match(clouds, /想法来了，也可以让它走/);
+  const daily = serializePractice(getExercise('participate-daily').steps, [{ completed: '已完成', note: '认真刷牙' }, { completed: '' }]);
+  assert.match(daily, /早上的 1 分钟/);
+  assert.match(daily, /日常练习：已完成/);
+  assert.match(daily, /认真刷牙/);
+  assert.doesNotMatch(daily, /中午的 1 分钟/);
 });
