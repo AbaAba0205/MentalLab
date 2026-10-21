@@ -44,6 +44,8 @@ npm run admin:create --workspace server
 
 ## 构建和验证
 
+项目开发时可通过 Seedream 生成图片资产。图片工具是独立本地 MCP 服务，读取根目录 `.env.local`，安装、连接与测试说明见 [图片生成工具](tools/image-gen/README.md)。首次使用执行 `npm ci --prefix tools/image-gen`，验证执行 `npm run test:image-gen`。
+
 ```sh
 npm run check
 npx playwright install chromium

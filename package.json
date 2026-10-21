@@ -11,6 +11,7 @@
     "dev:server": "npm run dev --workspace server",
     "build": "npm run build --workspaces",
     "test": "npm test --workspaces",
+    "test:image-gen": "npm run check --prefix tools/image-gen",
     "lint": "npm run lint --workspaces",
     "typecheck": "npm run typecheck --workspaces",
     "check": "npm run lint && npm run typecheck && npm test && npm run build",
