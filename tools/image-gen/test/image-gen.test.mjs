@@ -38,7 +38,7 @@ test('sends exact model, auth, 2K size and persists valid image', async t => {
     assert.equal(url, 'https://provider.example/v1/images/generations');
     assert.equal(options.headers.Authorization, 'Bearer test-secret');
     assert.equal(options.redirect, 'error');
-    assert.deepEqual(JSON.parse(options.body), { model: 'Doubao-Seedream-4.0', prompt: 'A calming illustration', size: '2048x2048', n: 1, response_format: 'b64_json' });
+    assert.deepEqual(JSON.parse(options.body), { model: 'Doubao-Seedream-4.0', prompt: 'A calming illustration', size: '2048x2048', n: 1, response_format: 'b64_json', watermark: false });
     return response();
   });
   assert.deepEqual(await readFile(result.path), png);

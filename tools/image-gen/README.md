@@ -20,7 +20,7 @@ codex mcp add image_gen -- D:\nodejs\node.exe D:\Desktop\MentalLab\tools\image-g
 - `image_gen_status`：读取模型列表，确认连接与模型权限，不出图。
 - `image_gen`：生成一张图片，或使用最多四张本地参考图进行编辑。返回图片绝对路径，再用 `view_image` 检查。
 
-`prompt` 为必填；`size` 默认 `2048x2048`，也可使用 `2560x1440` 或 `1440x2560`；`reference_images` 是项目内的 PNG/JPEG/WebP 文件路径；`output_path` 可指定项目内新文件，默认 `artifacts/images/seedream-UUID` 加实际格式扩展名。工具不覆盖已有文件。服务返回 JPEG 时会自动调整文件扩展名，最终以工具返回路径为准。透明背景需检查，模型不保证 alpha。
+`prompt` 为必填；`size` 默认 `2048x2048`，也可使用 `2560x1440` 或 `1440x2560`；`reference_images` 是项目内的 PNG/JPEG/WebP 文件路径；`output_path` 可指定项目内新文件，默认 `artifacts/images/seedream-UUID` 加实际格式扩展名。工具不覆盖已有文件，并在请求中关闭提供方水印。服务返回 JPEG 时会自动调整文件扩展名，最终以工具返回路径为准。透明背景需检查，模型不保证 alpha。
 
 ## 当前会话没有刷新工具时
 

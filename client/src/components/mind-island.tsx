@@ -25,6 +25,22 @@ const navigation: { id: View; title: string; icon: string }[] = [
   { id: 'exercises', title: '练习室', icon: 'leaf' },
   { id: 'records', title: '我的记录', icon: 'book' },
 ];
+const categoryCopy: Record<string, string> = {
+  '参与': '把注意力放回正在做的事，从普通的小行动开始。',
+  '观察': '看见身体、想法和冲动，不急着追赶或改变。',
+  '智慧心': '让感受和事实都被听见，再找适合自己的下一步。',
+  '描述': '用具体的语言说清发生了什么，减少猜测和评判。',
+};
+const exerciseArtwork: Record<ExerciseId, string> = {
+  'participate-guide': 'focus', 'participate-activity': 'focus', 'participate-immersion': 'focus',
+  'participate-senses': 'body', 'participate-counter': 'labels', 'participate-rating': 'balance', 'participate-daily': 'focus',
+  'observe-guide': 'clouds', 'observe-clouds': 'clouds', 'observe-body': 'body', 'observe-labels': 'labels',
+  'observe-urge': 'wave', 'observe-counter': 'clouds', 'observe-daily': 'clouds',
+  'wise-guide': 'balance', 'wise-decision': 'balance', 'wise-minds': 'balance', 'wise-breathing': 'body',
+  'wise-friend': 'letter', 'wise-integration': 'balance', 'wise-quick': 'body',
+  'describe-guide': 'facts', 'describe-facts': 'facts', 'describe-rewrite': 'facts', 'describe-body': 'body',
+  'describe-scenario': 'letter', 'describe-daily': 'facts',
+};
 export default function MindIsland({ user, onLogout }: { user: Account; onLogout: () => Promise<void> }) {
   const [snapshot, setSnapshot] = useState<{ records: PracticeRecord[]; chat: ConversationSnapshot } | null>(null);
   const [error, setError] = useState('');
@@ -47,7 +63,21 @@ function ScenarioCard({ onStart }: { onStart: () => void }) {
   </section>;
 }
 
-function ExerciseCard({ exercise, onStart }: { exercise: Exercise; onStart: (id: ExerciseId) => void }) {
+function ExerciseCard({ exercise, onStart, library = false }: { exercise: Exercise; onStart: (id: ExerciseId) => void; library?: boolean }) {
+  if (library) {
+    const artwork = exerciseArtwork[exercise.id];
+    return <article className={`exercise-card practice-tile art-${artwork}`}>
+      <button className="practice-tile-action" data-exercise={exercise.id} aria-label={`开始${exercise.title}`} onClick={() => onStart(exercise.id)}>
+        <span className="practice-tile-art" data-artwork={artwork}><Image src={`/practice-art/${artwork}.webp`} alt="" width={720} height={720} sizes="(max-width: 640px) 44vw, (max-width: 1100px) 28vw, 220px" /></span>
+        <span className="practice-tile-copy">
+          <span className="practice-tile-meta"><span className="category">{exercise.kind === 'guide' ? '技能讲解' : exercise.category}</span><span className="duration"><Icon name="clock" />{exercise.time}</span></span>
+          <span className="practice-tile-title">{exercise.title}</span>
+          <span className="practice-tile-description">{exercise.subtitle}</span>
+          <span className="practice-tile-cta">{exercise.kind === 'guide' ? '先了解' : '开始练习'} <span aria-hidden="true">→</span></span>
+        </span>
+      </button>
+    </article>;
+  }
   return <article className={`exercise-card ${exercise.color}`}>
     <div className="exercise-top"><div className="exercise-icon"><Icon name={exercise.icon} /></div><span className="duration"><Icon name="clock" />{exercise.time}</span></div>
     <h3>{exercise.title}</h3><p>{exercise.subtitle}</p>
@@ -172,7 +202,7 @@ function Workspace({ user, onLogout, initialRecords, initialChat }: { user: Acco
       </aside>
       <main>
         <header className="topbar"><div><span className="breadcrumb">我的小岛</span><span className="slash">/</span><span id="page-crumb">{navigation.find(n => n.id === view)?.title}</span></div><div className="topbar-right"><span className={`demo-badge ${aiStatus}`}><i />{aiStatus === 'configured' ? 'AI 已配置' : aiStatus === 'checking' ? '正在检查 AI' : '预设模式'}</span><button className="icon-button" aria-label="寻求帮助" title="寻求帮助" onClick={() => setScreen('help')}><Icon name="lifebuoy" /></button><button className="icon-button" aria-label="账户数据说明" onClick={() => setScreen('privacy')}><Icon name="shield" /></button><button className="text-button logout-button" onClick={() => { void onLogout().catch(() => setMessage('暂时无法退出，请重试')); }}>退出登录</button></div></header>
-        <div id="page" className="page">
+        <div id="page" className={`page${view === 'exercises' ? ' practice-library-page' : ''}`}>
           <div className="eyebrow">{headings[0]}</div><div className="welcome"><div><h1>{headings[1]}<span aria-hidden="true">✧</span></h1><p>{headings[2]}</p></div>{view === 'today' && <div className="date-pill"><Icon name="calendar" />{now.toLocaleDateString('zh-CN', { month: 'long', day: 'numeric', weekday: 'long' })}</div>}</div>
           {view === 'chat' && <MobileConversationControls chat={chat} />}
           <div className="chat-view" hidden={view !== 'chat'} aria-busy={chat.busy}><CompanionChat key={chat.current.id} active={view === 'chat'} switching={chat.busy} model={aiModel} conversationId={chat.current.id} initialMessages={chat.current.messages} initialDraft={chat.draft} onDraftChange={chat.updateDraft} onBusyChange={chat.setChatBusy} onHistorySaved={chat.saved} onHandoff={() => setScreen('help')} onSave={saveRecord} /></div>
@@ -190,10 +220,20 @@ function Workspace({ user, onLogout, initialRecords, initialChat }: { user: Acco
             <div className="bottom-grid"><section className="checkin-card"><div className="small-heading"><h2>此刻的心情，像哪一种？</h2><span>没有标准答案</span></div><MoodButtons onSelect={checkin} /></section><section className="recent-card"><div className="small-heading"><h2>最近的小小进展</h2><button className="text-button" onClick={() => navigate('records')}>查看全部 ↗</button></div>{records.slice(0, 2).map(r => <Recent key={r.id} record={r} />)}{records.length === 0 && <p className="no-records">你的第一条记录，会从这里开始。</p>}</section></div>
           </>}
           {view === 'exercises' && <>
+            <section className="practice-spotlight" aria-labelledby="practice-spotlight-title">
+              <div className="practice-spotlight-copy"><span>为此刻选一个练习</span><h2 id="practice-spotlight-title">想法太快时，先听听身体</h2><p>不分析原因，只留意胸口、肩膀或呼吸有什么感觉。两分钟，按自己的节奏来。</p><button className="spotlight-action" data-featured-exercise="observe-body" onClick={() => start('observe-body')}>开始身体感觉观察 <span aria-hidden="true">→</span></button></div>
+              <Image className="practice-spotlight-art" src="/practice-art/body.webp" alt="" width={720} height={720} priority sizes="(max-width: 640px) 46vw, 360px" />
+            </section>
             <ScenarioCard onStart={() => setScreen('scenario')} />
-            <div className="filters" aria-label="练习分类">{['全部', ...exerciseCategories].map(f => <button key={f} className={`filter ${filter === f ? 'active' : ''}`} aria-pressed={filter === f} onClick={() => setFilter(f)}>{f}</button>)}</div>
-            <div className="exercise-grid">{exercises.filter(e => filter === '全部' || e.category === filter).map(ex => <ExerciseCard key={ex.id} exercise={ex} onStart={start} />)}</div>
-            <div className="library-intro">✧ 你可以随时暂停或跳过。练习的目的不是消除所有情绪，而是多一种照顾自己的方式。</div>
+            <section className="practice-catalog" aria-labelledby="practice-catalog-title">
+              <div className="practice-catalog-heading"><div><span>探索练习</span><h2 id="practice-catalog-title">今天想练习什么？</h2></div><p>先选一个方向。每个练习都可以暂停，也不需要做到完美。</p></div>
+              <div className="filters" aria-label="练习分类">{['全部', ...exerciseCategories].map(f => <button key={f} className={`filter ${filter === f ? 'active' : ''}`} aria-pressed={filter === f} onClick={() => setFilter(f)}>{f}</button>)}</div>
+              <div className="practice-category-list">{exerciseCategories.filter(category => filter === '全部' || category === filter).map(category => <section className="practice-category" key={category} data-category={category} aria-labelledby={`practice-category-${category}`}>
+                <div className="practice-category-heading"><div><h3 id={`practice-category-${category}`}>{category}</h3><p>{categoryCopy[category]}</p></div><span>{exercises.filter(ex => ex.category === category).length} 个</span></div>
+                <div className="exercise-grid">{exercises.filter(ex => ex.category === category).map(ex => <ExerciseCard key={ex.id} exercise={ex} onStart={start} library />)}</div>
+              </section>)}</div>
+            </section>
+            <div className="library-intro"><strong>练习不是考试</strong><span>你可以随时暂停或跳过。目的不是消除所有情绪，而是多一种照顾自己的方式。</span></div>
           </>}
           {view === 'records' && <>
             <div className="filters">{['全部', '情绪签到', '练习复盘'].map(f => <button key={f} className={`filter ${recordFilter === f ? 'active' : ''}`} aria-pressed={recordFilter === f} onClick={() => setRecordFilter(f)}>{f}</button>)}</div>

@@ -12,12 +12,45 @@ test.beforeEach(async ({ page }) => {
 
 test('all four filters expose the complete worksheet catalog without placeholders', async ({ page }) => {
   await expect(page.locator('.exercise-card')).toHaveCount(27);
+  await expect(page.locator('.practice-category')).toHaveCount(4);
+  await expect(page.locator('.practice-tile-art img')).toHaveCount(27);
+  expect(new Set(await page.locator('[data-artwork]').evaluateAll(elements => elements.map(element => element.getAttribute('data-artwork')))).size).toBe(8);
   for (const [category, count] of [['参与', 7], ['观察', 7], ['智慧心', 7], ['描述', 6]] as const) {
     await page.getByRole('button', { name: category, exact: true }).click();
     await expect(page.locator('.exercise-card')).toHaveCount(count);
-    await expect(page.locator('.exercise-card .category')).toHaveText(Array(count).fill(category));
+    await expect(page.locator('.practice-category')).toHaveCount(1);
+    await expect(page.locator('.exercise-card .category')).toHaveText(['技能讲解', ...Array(count - 1).fill(category)]);
     await expect(page.locator('.exercise-card').first()).toContainText(`${category} · 技能讲解`);
   }
+});
+
+test('image-led practice library stays usable across desktop, tablet and mobile', async ({ page }) => {
+  await expect(page.getByRole('heading', { name: '想法太快时，先听听身体' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '今天想练习什么？' })).toBeVisible();
+  await expect(page.locator('[data-featured-exercise="observe-body"]')).toBeVisible();
+  for (const artwork of ['body', 'focus', 'clouds', 'wave', 'labels', 'balance', 'letter', 'facts']) {
+    const image = page.locator(`[data-artwork="${artwork}"] img`).first();
+    await image.scrollIntoViewIfNeeded();
+    await expect.poll(() => image.evaluate(element => (element as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
+  }
+
+  for (const [width, columns] of [[390, 2], [768, 3], [1180, 4]] as const) {
+    await page.setViewportSize({ width, height: 900 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    const tiles = await page.locator('.practice-category').first().locator('.practice-tile').evaluateAll((elements, expectedColumns) => elements.slice(0, expectedColumns).map(element => {
+      const bounds = element.getBoundingClientRect();
+      return { top: Math.round(bounds.top), left: Math.round(bounds.left), overflow: element.scrollWidth > element.clientWidth };
+    }), columns);
+    expect(new Set(tiles.map(tile => tile.top)).size).toBe(1);
+    expect(new Set(tiles.map(tile => tile.left)).size).toBe(columns);
+    expect(tiles.every(tile => !tile.overflow)).toBe(true);
+  }
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  const action = await page.locator('[data-featured-exercise="observe-body"]').boundingBox();
+  expect(action!.height).toBeGreaterThanOrEqual(44);
+  await page.locator('[data-featured-exercise="observe-body"]').click();
+  await expect(page.locator('#dialog-title')).toHaveText('身体感觉观察');
 });
 
 for (const exercise of exercises) {

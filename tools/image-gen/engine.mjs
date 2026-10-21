@@ -124,7 +124,7 @@ export async function generateImage(input, config, request = fetch) {
     images.push(`data:${imageType(bytes).mime};base64,${bytes.toString('base64')}`);
   }
   const body = {
-    model: config.model, prompt: prompt.trim(), size, n: 1, response_format: 'b64_json',
+    model: config.model, prompt: prompt.trim(), size, n: 1, response_format: 'b64_json', watermark: false,
     ...(images.length ? { image: images.length === 1 ? images[0] : images } : {}),
   };
   const result = await providerJson(config, 'images/generations', { method: 'POST', body: JSON.stringify(body) }, request);

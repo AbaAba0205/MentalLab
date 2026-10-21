@@ -521,3 +521,104 @@ input[type=range] { accent-color: #3b765b; min-height: 32px; }
 .timer-ring.breathing { animation: practice-breath 8s ease-in-out infinite; }
 @keyframes practice-breath { 0%, 100% { transform: scale(.92); } 50% { transform: scale(1.06); } }
 @media (prefers-reduced-motion: reduce) { .timer-ring.breathing { animation: none; } }
+
+/* Practice library follows the colorful, image-led rhythm of the Headspace app. */
+.practice-library-page { max-width: 1240px; color: #25282a; }
+.practice-library-page > .eyebrow { color: #65706b; font-weight: 650; }
+.practice-library-page > .welcome { margin-bottom: 30px; }
+.practice-library-page > .welcome h1 { margin-bottom: 10px; color: #242729; font-size: 34px; font-weight: 720; line-height: 1.25; letter-spacing: 0; }
+.practice-library-page > .welcome h1 span { color: #ff725e; }
+.practice-library-page > .welcome p { color: #626c67; font-size: 14px; line-height: 1.75; }
+.practice-spotlight { min-height: 320px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(300px, .76fr); align-items: center; position: relative; overflow: hidden; border-radius: 8px; background: #ffd448; }
+.practice-spotlight-copy { z-index: 1; padding: 44px 16px 44px 50px; }
+.practice-spotlight-copy > span { display: block; color: #604d0b; font-size: 11px; font-weight: 750; }
+.practice-spotlight h2 { max-width: 520px; margin: 11px 0 13px; color: #273039; font-size: 31px; line-height: 1.32; letter-spacing: 0; }
+.practice-spotlight p { max-width: 520px; margin: 0 0 25px; color: #514b2e; font-size: 14px; line-height: 1.8; }
+.spotlight-action { min-height: 48px; display: inline-flex; align-items: center; justify-content: space-between; gap: 26px; padding: 12px 18px; border: 0; border-radius: 8px; color: #fff; background: #283646; font-size: 13px; font-weight: 700; box-shadow: none; }
+.spotlight-action:hover { color: #fff; background: #172433; box-shadow: none; }
+.practice-spotlight-art { width: 100%; height: 100%; max-height: 340px; object-fit: contain; object-position: center; mix-blend-mode: multiply; }
+.practice-library-page > .scenario-card { margin-top: 18px; padding: 20px 23px; grid-template-columns: 48px minmax(0, 1fr) auto; border: 0; border-radius: 8px; color: #312552; background: #ded3ff; }
+.practice-library-page > .scenario-card .scenario-card-icon { width: 46px; height: 46px; border-radius: 50%; color: #47347c; background: #c8b6ff; }
+.practice-library-page > .scenario-card .scenario-kicker { color: #5e4a8c; font-size: 10px; font-weight: 700; }
+.practice-library-page > .scenario-card h2 { margin: 3px 0 5px; color: #312552; font-size: 17px; }
+.practice-library-page > .scenario-card p { color: #5a4d73; font-size: 12px; }
+.practice-library-page > .scenario-card .primary { min-height: 44px; border-radius: 8px; background: #553f87; box-shadow: none; }
+.practice-library-page > .scenario-card .primary:hover { background: #443170; }
+.practice-catalog { margin-top: 52px; }
+.practice-catalog-heading { display: flex; align-items: end; justify-content: space-between; gap: 30px; }
+.practice-catalog-heading span { color: #6a746f; font-size: 11px; font-weight: 700; }
+.practice-catalog-heading h2 { margin: 6px 0 0; font-size: 26px; line-height: 1.3; }
+.practice-catalog-heading > p { max-width: 390px; margin: 0; color: #68716d; font-size: 13px; line-height: 1.7; text-align: right; }
+.practice-library-page .filters { margin: 22px 0 42px; padding-bottom: 20px; gap: 8px; border-bottom: 1px solid #e1e5df; }
+.practice-library-page .filter { min-height: 44px; padding: 9px 17px; border: 1px solid #cfd6cf; border-radius: 999px; color: #425047; background: #fff; font-size: 12px; font-weight: 650; }
+.practice-library-page .filter:hover { color: #26382d; background: #eef3eb; }
+.practice-library-page .filter.active { color: #fff; border-color: #286d50; background: #286d50; }
+.practice-category-list { display: grid; gap: 52px; }
+.practice-category-heading { min-height: 52px; display: flex; align-items: start; justify-content: space-between; gap: 24px; margin-bottom: 17px; }
+.practice-category-heading h3 { margin: 0 0 6px; color: #2b3330; font-size: 21px; }
+.practice-category-heading p { max-width: 650px; margin: 0; color: #68716d; font-size: 12px; line-height: 1.65; }
+.practice-category-heading > span { flex: none; padding-top: 5px; color: #79817d; font-size: 10px; }
+.practice-library-page .exercise-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 15px; }
+.practice-library-page .exercise-card.practice-tile { min-height: 0; padding: 0; overflow: hidden; border: 1px solid #e2e5e1; border-radius: 8px; background: #fff; box-shadow: none; }
+.practice-library-page .exercise-card.practice-tile::after { display: none; }
+.practice-library-page .exercise-card.practice-tile:hover { transform: translateY(-3px); border-color: #c6cdc7; box-shadow: 0 12px 28px #34483c14; }
+.practice-tile-action { width: 100%; height: 100%; display: flex; flex-direction: column; padding: 0; border: 0; border-radius: inherit; color: inherit; background: transparent; text-align: left; box-shadow: none; }
+.practice-tile-action:hover { transform: none; background: transparent; box-shadow: none; }
+.practice-tile-art { width: 100%; aspect-ratio: 4 / 3; display: block; overflow: hidden; background: #f5f1ec; }
+.practice-tile-art img { width: 100%; height: 100%; display: block; object-fit: cover; }
+.art-body .practice-tile-art img { object-position: center 46%; }
+.practice-tile-copy { min-height: 176px; display: flex; flex: 1; flex-direction: column; padding: 16px 17px 15px; }
+.practice-tile-meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+.practice-library-page .practice-tile .category { padding: 0; color: #64716a; background: transparent; font-size: 10px; font-weight: 650; }
+.practice-library-page .practice-tile .duration { color: #7b837f; font-size: 9px; }
+.practice-library-page .practice-tile .duration svg { width: 11px; height: 11px; }
+.practice-tile-title { color: #29312d; font-size: 16px; font-weight: 720; line-height: 1.45; }
+.practice-tile-description { margin-top: 7px; display: -webkit-box; overflow: hidden; color: #68716d; font-size: 11px; line-height: 1.7; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.practice-tile-cta { margin-top: auto; padding-top: 15px; display: flex; justify-content: space-between; color: #2e674f; font-size: 11px; font-weight: 700; }
+.practice-tile-cta > span { font-size: 15px; }
+.practice-library-page .library-intro { margin-top: 52px; padding: 24px 0 0; display: grid; grid-template-columns: 150px 1fr; gap: 28px; border: 0; border-top: 1px solid #dfe4dd; border-radius: 0; color: #2b3330; background: transparent; }
+.practice-library-page .library-intro strong { font-size: 13px; }
+.practice-library-page .library-intro span { color: #68716d; font-size: 12px; line-height: 1.75; }
+@media (max-width: 1100px) {
+  .practice-library-page .exercise-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 760px) {
+  .practice-spotlight { grid-template-columns: minmax(0, 1fr) 220px; min-height: 295px; }
+  .practice-spotlight-copy { padding: 34px 0 34px 34px; }
+  .practice-spotlight h2 { font-size: 27px; }
+  .practice-library-page .exercise-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 640px) {
+  .practice-library-page { padding-top: 23px; padding-inline: 16px; }
+  .practice-library-page > .welcome { margin-bottom: 22px; }
+  .practice-library-page > .welcome h1 { font-size: 27px; }
+  .practice-library-page > .welcome p { font-size: 12px; }
+  .practice-spotlight { min-height: 278px; grid-template-columns: minmax(0, 1.12fr) minmax(118px, .88fr); }
+  .practice-spotlight-copy { padding: 25px 0 25px 22px; }
+  .practice-spotlight-copy > span { font-size: 9px; }
+  .practice-spotlight h2 { margin: 9px 0; font-size: 22px; line-height: 1.38; }
+  .practice-spotlight p { max-width: 210px; margin-bottom: 18px; font-size: 11px; line-height: 1.65; }
+  .spotlight-action { min-height: 44px; width: calc(100% + 54px); position: relative; z-index: 2; padding: 10px 13px; gap: 10px; font-size: 11px; }
+  .practice-spotlight-art { align-self: end; height: 68%; object-fit: cover; object-position: 28% center; }
+  .practice-library-page > .scenario-card { grid-template-columns: 42px 1fr; margin-top: 12px; padding: 16px; }
+  .practice-library-page > .scenario-card .primary { grid-column: 1 / -1; width: 100%; }
+  .practice-catalog { margin-top: 44px; }
+  .practice-catalog-heading { display: block; }
+  .practice-catalog-heading h2 { font-size: 23px; }
+  .practice-catalog-heading > p { margin-top: 9px; font-size: 12px; text-align: left; }
+  .practice-library-page .filters { margin: 18px 0 34px; flex-wrap: nowrap; overflow-x: auto; padding-bottom: 15px; scrollbar-width: none; }
+  .practice-library-page .filters::-webkit-scrollbar { display: none; }
+  .practice-library-page .filter { flex: none; }
+  .practice-category-list { gap: 43px; }
+  .practice-category-heading { min-height: 0; margin-bottom: 14px; }
+  .practice-category-heading h3 { font-size: 19px; }
+  .practice-category-heading p { font-size: 11px; }
+  .practice-library-page .exercise-grid { gap: 10px; }
+  .practice-tile-copy { min-height: 137px; padding: 12px 12px 11px; }
+  .practice-tile-meta { margin-bottom: 8px; }
+  .practice-library-page .practice-tile .category { display: inline; font-size: 9px; }
+  .practice-tile-title { font-size: 14px; line-height: 1.4; overflow-wrap: anywhere; }
+  .practice-tile-description { display: none; }
+  .practice-tile-cta { padding-top: 12px; font-size: 10px; }
+  .practice-library-page .library-intro { grid-template-columns: 1fr; gap: 7px; margin-top: 44px; }
+}
